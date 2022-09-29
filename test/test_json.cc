@@ -31,9 +31,17 @@ void test03()
     std::cout << data.dump() << std::endl;
 }
 
+void test04()
+{
+    std::cout << "test04" << std::endl;
+    Json data;
+    data["test"] = "123";
+}
+
 int main()
 {
-    test01();
-    test02();
-    test03();
+    // test01();
+    // test02();
+    // test03();
+    test04();
 }

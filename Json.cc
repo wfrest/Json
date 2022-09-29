@@ -3,27 +3,96 @@
 namespace wfrest
 {
 
-Json::Json() 
-	: json_(json_value_parse(""))
+// inner class 
+class JsonValue
 {
-}
+public:
+    JsonValue() 
+        : json_(json_value_create(JSON_VALUE_NULL)) 
+	{}
+
+	explicit JsonValue(std::nullptr_t)
+		: json_(json_value_create(JSON_VALUE_NULL)) 
+	{}
+
+    JsonValue(double value) 
+		: json_(json_value_create(JSON_VALUE_NUMBER, value)) 
+	{}
+
+    JsonValue(int value)
+		: json_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(value))) 
+	{}
+
+    JsonValue(bool value)
+		: json_(value ? json_value_create(JSON_VALUE_TRUE) : json_value_create(JSON_VALUE_FALSE)) 
+	{}
+
+    // Json(const Array &values);
+    // Json(const Object &values);
+
+    explicit JsonValue(const std::string& str) 
+        : json_(json_value_parse(str.c_str())) {}
+
+    explicit JsonValue(const char* str) 
+        : json_(json_value_parse(str)) {}
+
+    ~JsonValue() 
+    {
+        if(json_) 
+        {
+            json_value_destroy(json_);
+        }
+    }
+
+    void operator=(const std::string& str);
+
+    const json_value_t* json() const { return json_; }
+    void set_key(const std::string& key) { key_ = key; }
+    void set_key(std::string&& key) { key_ = std::move(key); }
+    
+private:
+    std::string key_;
+    json_value_t *json_;
+};
 
 Json::Json(const std::string& str) 
-	: json_(json_value_parse(str.c_str()))
-{
-}
+	: val_(new JsonValue(str))
+{}
 
 Json::Json(const char* str) 
-	: json_(json_value_parse(str))
-{
-}
+	: val_(new JsonValue(str)) 
+{}
 
-Json::~Json()
+Json::Json(std::nullptr_t null) 
+	: val_(new JsonValue(null)) 
+{}
+
+Json::Json(double value)
+	: val_(new JsonValue(value)) 
+{}
+	
+Json::Json(int value)
+	: val_(new JsonValue(value)) 
+{}
+
+Json::Json(bool value)
+	: val_(new JsonValue(value)) 
+{}
+
+// Json::Json(const Array &values)
+// 	: val_(new JsonValue(str)) 
+// {}
+
+// Json::Json(const Object &values)
+// 	: val_(new JsonValue(str)) 
+// {}
+
+Json::~Json() 
 {
-    if(json_) 
-    {
-        json_value_destroy(json_);
-    }
+	if(val_) 
+	{
+		delete val_;
+	}
 }
 
 Json Json::parse(const std::string &str)
@@ -38,20 +107,29 @@ Json Json::parse(const std::ifstream& stream)
     return Json(buffer.str());
 }
 
-const std::string &Json::dump()
+Json& Json::operator[](const std::string& key)
+{
+	val_->set_key(key);
+	return *this;
+}
+
+Json& Json::operator[](std::string&& key)
+{
+	val_->set_key(std::move(key));
+	return *this;
+}
+
+std::string Json::dump()
 {
     return dump(0);
 }
 
-const std::string &Json::dump(int spaces)
+std::string Json::dump(int spaces)
 {
-    if(!str_.empty()) 
-    {
-        str_.clear();
-    }
-    str_.reserve(64);
-    value_convert(json_, spaces, 0, &str_);
-    return str_;
+	std::string str;
+    str.reserve(64);
+    value_convert(val_->json(), spaces, 0, &str);
+    return str;
 }
 
 void Json::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
@@ -182,6 +260,8 @@ void Json::array_convert(const json_array_t *arr, int spaces, int depth, std::st
     }
 	out_str->append("]");
 }
+
+
 
 void Json::object_convert_not_format(const json_object_t *obj, std::string* out_str)
 {
