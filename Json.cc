@@ -3,22 +3,19 @@
 namespace wfrest
 {
 
-Json::Json(const std::string& str)
+Json::Json() 
+	: json_(json_value_parse(""))
 {
-    if(json_)
-    {
-        json_value_destroy(json_);
-    }
-    json_ = json_value_parse(str.c_str());
 }
 
-Json::Json(const char* str)
+Json::Json(const std::string& str) 
+	: json_(json_value_parse(str.c_str()))
 {
-    if(json_)
-    {
-        json_value_destroy(json_);
-    }
-    json_ = json_value_parse(str);
+}
+
+Json::Json(const char* str) 
+	: json_(json_value_parse(str))
+{
 }
 
 Json::~Json()
@@ -59,6 +56,7 @@ const std::string &Json::dump(int spaces)
 
 void Json::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
 {
+	if(val == nullptr || out_str == nullptr) return;
 	switch (json_value_type(val))
 	{
 	case JSON_VALUE_STRING:

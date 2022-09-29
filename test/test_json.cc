@@ -24,8 +24,16 @@ void test02()
     std::cout << data.dump() << std::endl;
 }
 
+void test03()
+{
+    std::cout << "test03" << std::endl;
+    Json data;
+    std::cout << data.dump() << std::endl;
+}
+
 int main()
 {
     test01();
     test02();
+    test03();
 }
