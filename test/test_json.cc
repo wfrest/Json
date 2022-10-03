@@ -35,7 +35,9 @@ void test04()
 {
     std::cout << "test04" << std::endl;
     Json data;
-    data["test"] = "123";
+    data["test"] = 1;
+    // todo : fix
+    std::cout << data << std::endl;
 }
 
 int main()

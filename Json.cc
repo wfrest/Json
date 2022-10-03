@@ -1,4 +1,5 @@
 #include "Json.h"
+#include <cassert>
 
 namespace wfrest
 {
@@ -15,26 +16,29 @@ public:
 		: json_(json_value_create(JSON_VALUE_NULL)) 
 	{}
 
-    JsonValue(double value) 
+    explicit JsonValue(double value) 
 		: json_(json_value_create(JSON_VALUE_NUMBER, value)) 
 	{}
 
-    JsonValue(int value)
+    explicit JsonValue(int value)
 		: json_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(value))) 
 	{}
 
-    JsonValue(bool value)
+    explicit JsonValue(bool value)
 		: json_(value ? json_value_create(JSON_VALUE_TRUE) : json_value_create(JSON_VALUE_FALSE)) 
 	{}
 
-    // Json(const Array &values);
-    // Json(const Object &values);
-
     explicit JsonValue(const std::string& str) 
-        : json_(json_value_parse(str.c_str())) {}
+        : json_(json_value_parse(str.c_str())) 
+	{}
 
     explicit JsonValue(const char* str) 
-        : json_(json_value_parse(str)) {}
+        : json_(json_value_parse(str)) 
+	{}
+
+    explicit JsonValue(const Json::Object& obj) 
+        : json_(json_value_create(JSON_VALUE_OBJECT)) 
+	{}
 
     ~JsonValue() 
     {
@@ -43,17 +47,55 @@ public:
             json_value_destroy(json_);
         }
     }
+	JsonValue(const JsonValue&) = delete;
+	JsonValue& operator=(const JsonValue&) = delete;
+    JsonValue(JsonValue&& other) = delete;
+    JsonValue& operator=(JsonValue&& other) = delete;
 
     void operator=(const std::string& str);
 
-    const json_value_t* json() const { return json_; }
-    void set_key(const std::string& key) { key_ = key; }
-    void set_key(std::string&& key) { key_ = std::move(key); }
+	json_value_t* json() { return json_; }
+
+	void push_back(const std::string& key, int val);
     
+public:
+	// todo : need optimize in modern way
+	int type();
+
+public:
+    static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
+
+    static void string_convert(const char *raw_str, std::string* out_str);
+
+    static void number_convert(double number, std::string* out_str);
+
+    static void array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str);
+
+    static void array_convert_not_format(const json_array_t *arr, std::string* out_str);
+
+    static void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
+
+    static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
+
 private:
     std::string key_;
     json_value_t *json_;
 };
+
+int JsonValue::type()
+{
+	return json_value_type(json_);
+}
+
+void JsonValue::push_back(const std::string& key, int val)
+{
+	json_object_t* obj = json_value_object(json_);
+	json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER, val);
+}
+
+Json::Json() 
+	: val_(new JsonValue())
+{}
 
 Json::Json(const std::string& str) 
 	: val_(new JsonValue(str))
@@ -79,13 +121,29 @@ Json::Json(bool value)
 	: val_(new JsonValue(value)) 
 {}
 
-// Json::Json(const Array &values)
-// 	: val_(new JsonValue(str)) 
-// {}
+Json::Json(const Object& obj)
+	: val_(new JsonValue(obj)) 
+{}
 
-// Json::Json(const Object &values)
-// 	: val_(new JsonValue(str)) 
-// {}
+Json::Json(Json&& other)
+{
+	val_ = other.val_;
+	other.val_ = nullptr;    
+}
+
+Json& Json::operator=(Json&& other)
+{
+	if (this == &other)
+	{
+		return *this;
+	}
+	delete val_;
+
+	val_ = other.val_;
+	other.val_ = nullptr;
+
+	return *this;
+}
 
 Json::~Json() 
 {
@@ -109,30 +167,51 @@ Json Json::parse(const std::ifstream& stream)
 
 Json& Json::operator[](const std::string& key)
 {
-	val_->set_key(key);
-	return *this;
+	auto it = object_.find(key);
+	if(it != object_.end())
+	{
+		return it->second;
+	}
+	Json js(object_);
+	assert(js.type() == JSON_VALUE_OBJECT);
+	js.key_ = key;
+	// std::pair<iterator,bool>
+	auto ret = object_.emplace(key, std::move(js));
+	return ret.first->second;
 }
 
-Json& Json::operator[](std::string&& key)
+Json& Json::operator=(int val)
 {
-	val_->set_key(std::move(key));
+	Json* json = this;
+	assert(json->type() == JSON_VALUE_OBJECT);
+	json->push_back(json->key_, val);
 	return *this;
 }
 
-std::string Json::dump()
+void Json::push_back(const std::string& key, int val)
+{
+	val_->push_back(key, val);
+}
+
+const std::string Json::dump() const
 {
     return dump(0);
 }
 
-std::string Json::dump(int spaces)
+const std::string Json::dump(int spaces) const
 {
 	std::string str;
     str.reserve(64);
-    value_convert(val_->json(), spaces, 0, &str);
+    JsonValue::value_convert(val_->json(), spaces, 0, &str);
     return str;
 }
 
-void Json::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
+int Json::type()
+{
+	return val_->type();
+}
+
+void JsonValue::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
 {
 	if(val == nullptr || out_str == nullptr) return;
 	switch (json_value_type(val))
@@ -161,7 +240,7 @@ void Json::value_convert(const json_value_t *val, int spaces, int depth, std::st
 	}
 }
 
-void Json::string_convert(const char *str, std::string* out_str)
+void JsonValue::string_convert(const char *str, std::string* out_str)
 {
 	out_str->append("\"");
 	while (*str)
@@ -198,7 +277,7 @@ void Json::string_convert(const char *str, std::string* out_str)
 	out_str->append("\"");
 }
 
-void Json::number_convert(double number, std::string* out_str)
+void JsonValue::number_convert(double number, std::string* out_str)
 {
     std::ostringstream oss;
 	long long integer = number;
@@ -210,7 +289,7 @@ void Json::number_convert(double number, std::string* out_str)
     out_str->append(oss.str());
 }
 
-void Json::array_convert_not_format(const json_array_t *arr, std::string* out_str)
+void JsonValue::array_convert_not_format(const json_array_t *arr, std::string* out_str)
 {
 	const json_value_t *val;
 	int n = 0;
@@ -228,7 +307,7 @@ void Json::array_convert_not_format(const json_array_t *arr, std::string* out_st
 	out_str->append("]");
 }
 
-void Json::array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str)
+void JsonValue::array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str)
 {
 	if(spaces == 0) 
 	{
@@ -263,7 +342,7 @@ void Json::array_convert(const json_array_t *arr, int spaces, int depth, std::st
 
 
 
-void Json::object_convert_not_format(const json_object_t *obj, std::string* out_str)
+void JsonValue::object_convert_not_format(const json_object_t *obj, std::string* out_str)
 {
 	const char *name;
 	const json_value_t *val;
@@ -285,7 +364,7 @@ void Json::object_convert_not_format(const json_object_t *obj, std::string* out_
 	out_str->append("}");
 }
 
-void Json::object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str)
+void JsonValue::object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str)
 {
 	if(spaces == 0) 
 	{

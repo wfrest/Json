@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <functional>
 #include <map>
 #include "json_parser.h"
 
@@ -17,48 +18,40 @@ class JsonValue;
 class Json
 {
 public:
-    using Array = std::vector<Json>;
     using Object = std::map<std::string, Json>;
 public: 
     // Constructors for the various types of JSON value.
-    Json() = default;  // NULL
+    Json();
     Json(std::nullptr_t);
     Json(double value);
     Json(int value); 
     Json(bool value);
     Json(const std::string& str);  
     Json(const char* str);
-    // Json(const Array &values);
-    // Json(const Object &values);
+    Json(const Object& obj);
     ~Json();
+
+    Json(Json&& other);
+    Json& operator=(Json&& other);
 
     static Json parse(const std::string &str);
     static Json parse(const std::ifstream& stream);
     
-    std::string dump();
-    std::string dump(int spaces);
+    const std::string dump() const;
+    const std::string dump(int spaces) const;
 
+    int type();
+
+public:
+    // object
     Json& operator[](const std::string& key);
-    Json& operator[](std::string&& key);
-
-    // void operator=(int integer);
-
+    Json& operator=(int val);
+    void push_back(const std::string& key, int val);
 private:
-    void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
-
-    void string_convert(const char *raw_str, std::string* out_str);
-
-    void number_convert(double number, std::string* out_str);
-
-    void array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str);
-
-    void array_convert_not_format(const json_array_t *arr, std::string* out_str);
-
-    void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
-
-    void object_convert_not_format(const json_object_t *obj, std::string* out_str);
-
+    friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
 private:
+    Object object_;
+    std::string key_;  // for obj
     JsonValue* val_ = nullptr;
 };
 
