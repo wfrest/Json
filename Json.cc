@@ -58,9 +58,12 @@ public:
 
 	void push_back(const std::string& key, int val);
     
+	void push_back(const std::string& key, double val);
 public:
 	// todo : need optimize in modern way
 	int type();
+
+	void to_object();
 
 public:
     static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
@@ -89,8 +92,20 @@ int JsonValue::type()
 
 void JsonValue::push_back(const std::string& key, int val)
 {
+	this->push_back(key, static_cast<double>(val));
+}
+
+void JsonValue::push_back(const std::string& key, double val)
+{
 	json_object_t* obj = json_value_object(json_);
 	json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER, val);
+}
+
+void JsonValue::to_object()
+{
+	// TODO : optimize
+	json_value_destroy(json_);
+	json_ = json_value_create(JSON_VALUE_OBJECT);
 }
 
 Json::Json() 
@@ -167,6 +182,12 @@ Json Json::parse(const std::ifstream& stream)
 
 Json& Json::operator[](const std::string& key)
 {
+	if(val_->type() == JSON_VALUE_NULL)
+	{
+		val_->to_object();
+		this->key_ = key;
+		return *this;
+	}
 	auto it = object_.find(key);
 	if(it != object_.end())
 	{
@@ -182,15 +203,30 @@ Json& Json::operator[](const std::string& key)
 
 Json& Json::operator=(int val)
 {
+	return operator=(static_cast<double>(val));
+}
+
+Json& Json::operator=(double val)
+{
 	Json* json = this;
 	assert(json->type() == JSON_VALUE_OBJECT);
 	json->push_back(json->key_, val);
-	return *this;
+	return *this;	
 }
 
 void Json::push_back(const std::string& key, int val)
 {
 	val_->push_back(key, val);
+}
+
+void Json::push_back(const std::string& key, double val)
+{
+	val_->push_back(key, val);
+}
+
+void Json::to_object()
+{
+	val_->to_object();
 }
 
 const std::string Json::dump() const

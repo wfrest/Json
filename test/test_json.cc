@@ -35,8 +35,16 @@ void test04()
 {
     std::cout << "test04" << std::endl;
     Json data;
-    data["test"] = 1;
-    // todo : fix
+    data["test"] = 1.0;
+    std::cout << data << std::endl;
+}
+
+void test05()
+{
+    std::cout << "test05" << std::endl;
+    Json data;
+    // todo : need fix
+    data["test"]["2"] = 2.0;
     std::cout << data << std::endl;
 }
 
@@ -45,5 +53,6 @@ int main()
     // test01();
     // test02();
     // test03();
-    test04();
+    // test04();
+    test05();
 }

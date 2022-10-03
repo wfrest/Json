@@ -41,15 +41,21 @@ public:
     const std::string dump(int spaces) const;
 
     int type();
-
 public:
     // object
     Json& operator[](const std::string& key);
+    // todo : need meta programming to optimize
     Json& operator=(int val);
+    Json& operator=(double val);
     void push_back(const std::string& key, int val);
+    void push_back(const std::string& key, double val);
+
 private:
+    void to_object();
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
+
 private:
+    Json *parent = nullptr; 
     Object object_;
     std::string key_;  // for obj
     JsonValue* val_ = nullptr;
