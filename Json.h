@@ -32,6 +32,7 @@ public:
     Json(JsonValue* val);
     ~Json();
 
+    
     Json(Json&& other);
     Json& operator=(Json&& other);
 
@@ -53,9 +54,7 @@ public:
     void push_back(const std::string& key, int val);
     void push_back(const std::string& key, double val);
 
-private:
-    void to_object();
-    
+private:    
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
 
 private:

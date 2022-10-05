@@ -116,6 +116,14 @@ void JsonValue::push_back(const std::string& key, int val)
 
 void JsonValue::push_back(const std::string& key, double val)
 {
+	if(this->type() == JSON_VALUE_NULL)
+	{
+		this->to_object();
+	}
+	else if(this->type() != JSON_VALUE_OBJECT)
+	{
+		return;
+	}
 	json_object_t* obj = json_value_object(json_);
 	json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER, val);
 }
@@ -272,11 +280,6 @@ void Json::push_back(const std::string& key, int val)
 void Json::push_back(const std::string& key, double val)
 {
 	val_->push_back(key, val);
-}
-
-void Json::to_object()
-{
-	val_->to_object();
 }
 
 const std::string Json::dump() const

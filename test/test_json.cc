@@ -47,11 +47,42 @@ void test05()
     std::cout << data << std::endl;
 }
 
+void test06()
+{
+    std::cout << "test06" << std::endl;
+    Json data;
+    data["test"] = 1.0;
+    data["test1"] = 2.0;
+    std::cout << data << std::endl;
+}
+
+void test07()
+{
+    std::cout << "test07" << std::endl;
+    Json data;
+    std::cout << data << std::endl;
+    data["test"] = 1.0;
+    data["test1"]["test2"] = 2.0;
+    std::cout << data << std::endl;
+}
+
+void test08()
+{
+    Json data;
+    data.push_back("test", 2.0);
+    data.push_back("test1", 1111);
+    std::cout << data << std::endl;
+}
+
+
 int main()
 {
     // test01();
     // test02();
     // test03();
-    test04();
-    test05();
+    // test04();
+    // test05();
+    // test06();
+    // test07();
+    test08();
 }
