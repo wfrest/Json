@@ -29,6 +29,7 @@ public:
     Json(const std::string& str);  
     Json(const char* str);
     Json(const Object& obj);
+    Json(JsonValue* val);
     ~Json();
 
     Json(Json&& other);
@@ -40,7 +41,9 @@ public:
     const std::string dump() const;
     const std::string dump(int spaces) const;
 
-    int type();
+    int type() const;
+
+    bool empty() const;
 public:
     // object
     Json& operator[](const std::string& key);
@@ -52,16 +55,17 @@ public:
 
 private:
     void to_object();
+    
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
 
 private:
-    Json *parent = nullptr; 
     Object object_;
-    std::string key_;  // for obj
+    std::string key_;
+    Json* parent_ = nullptr;  // watcher
     JsonValue* val_ = nullptr;
+    int depth_;
 };
 
 }  // namespace wfrest
-
 
 #endif  // WFREST_JSON_H_

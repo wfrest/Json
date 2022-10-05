@@ -43,8 +43,7 @@ void test05()
 {
     std::cout << "test05" << std::endl;
     Json data;
-    // todo : need fix
-    data["test"]["2"] = 2.0;
+    data["test"]["2"] = 3.0;
     std::cout << data << std::endl;
 }
 
@@ -53,6 +52,6 @@ int main()
     // test01();
     // test02();
     // test03();
-    // test04();
+    test04();
     test05();
 }

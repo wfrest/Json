@@ -4,13 +4,11 @@
 namespace wfrest
 {
 
-// inner class 
+// inner class
 class JsonValue
 {
 public:
-    JsonValue() 
-        : json_(json_value_create(JSON_VALUE_NULL)) 
-	{}
+	friend Json;
 
 	explicit JsonValue(std::nullptr_t)
 		: json_(json_value_create(JSON_VALUE_NULL)) 
@@ -40,13 +38,19 @@ public:
         : json_(json_value_create(JSON_VALUE_OBJECT)) 
 	{}
 
-    ~JsonValue() 
+	explicit JsonValue(const json_value_t* val)
+		: allocate_(false), 
+		json_(const_cast<json_value_t *>(val))
+	{}
+
+    ~JsonValue()
     {
-        if(json_) 
+        if(json_ && allocate_) 
         {
             json_value_destroy(json_);
         }
     }
+
 	JsonValue(const JsonValue&) = delete;
 	JsonValue& operator=(const JsonValue&) = delete;
     JsonValue(JsonValue&& other) = delete;
@@ -56,15 +60,19 @@ public:
 
 	json_value_t* json() { return json_; }
 
-	void push_back(const std::string& key, int val);
-    
+	void push_back(const std::string& key, int val);    
 	void push_back(const std::string& key, double val);
+	const json_value_t* create_sub_object(const std::string& key);
+
 public:
 	// todo : need optimize in modern way
-	int type();
+	int type() const;
 
 	void to_object();
 
+	bool empty() const;
+
+	bool assign(const json_value_t *json);
 public:
     static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
 
@@ -81,13 +89,24 @@ public:
     static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
 
 private:
+    JsonValue() 
+        : json_(nullptr) 
+	{}
+
+private:
+	bool allocate_ = true;
     std::string key_;
-    json_value_t *json_;
+    json_value_t *json_ = nullptr;
 };
 
-int JsonValue::type()
+int JsonValue::type() const
 {
 	return json_value_type(json_);
+}
+
+bool JsonValue::empty() const
+{
+	return json_ == nullptr;
 }
 
 void JsonValue::push_back(const std::string& key, int val)
@@ -108,8 +127,26 @@ void JsonValue::to_object()
 	json_ = json_value_create(JSON_VALUE_OBJECT);
 }
 
-Json::Json() 
-	: val_(new JsonValue())
+const json_value_t* JsonValue::create_sub_object(const std::string& key)
+{
+	json_object_t *obj = json_value_object(json_);
+	const json_value_t* sub_obj = json_object_append(obj, key.c_str(), JSON_VALUE_OBJECT);
+	return sub_obj;
+}
+
+bool JsonValue::assign(const json_value_t *json)
+{
+	if(json_ != nullptr)
+	{
+		return false;
+	}
+	json_ = const_cast<json_value_t *>(json);
+	allocate_ = false;
+	return true;
+}
+
+Json::Json()
+	: val_(new JsonValue(nullptr))
 {}
 
 Json::Json(const std::string& str) 
@@ -140,10 +177,16 @@ Json::Json(const Object& obj)
 	: val_(new JsonValue(obj)) 
 {}
 
+Json::Json(JsonValue* val)
+	: val_(val)
+{}
+
 Json::Json(Json&& other)
 {
 	val_ = other.val_;
-	other.val_ = nullptr;    
+	parent_ = other.parent_;
+	other.val_ = nullptr;   
+	other.parent_ = nullptr; 
 }
 
 Json& Json::operator=(Json&& other)
@@ -152,10 +195,13 @@ Json& Json::operator=(Json&& other)
 	{
 		return *this;
 	}
+	// destroey the resources the Json hold
 	delete val_;
-
+	
 	val_ = other.val_;
+	parent_ = other.parent_;
 	other.val_ = nullptr;
+	other.parent_ = nullptr; 
 
 	return *this;
 }
@@ -182,21 +228,25 @@ Json Json::parse(const std::ifstream& stream)
 
 Json& Json::operator[](const std::string& key)
 {
+	Json* parent = this->parent_;
+	if(parent)
+	{
+		const json_value_t* sub_obj = parent->val_->create_sub_object(parent->key_);
+		val_->assign(sub_obj);
+	} 
 	if(val_->type() == JSON_VALUE_NULL)
 	{
 		val_->to_object();
-		this->key_ = key;
-		return *this;
 	}
 	auto it = object_.find(key);
 	if(it != object_.end())
 	{
 		return it->second;
 	}
-	Json js(object_);
-	assert(js.type() == JSON_VALUE_OBJECT);
-	js.key_ = key;
-	// std::pair<iterator,bool>
+	Json js(new JsonValue);  // empty
+	assert(js.empty());
+	this->key_ = key;
+	js.parent_ = this;
 	auto ret = object_.emplace(key, std::move(js));
 	return ret.first->second;
 }
@@ -208,10 +258,10 @@ Json& Json::operator=(int val)
 
 Json& Json::operator=(double val)
 {
-	Json* json = this;
+	Json* json = this->parent_;
 	assert(json->type() == JSON_VALUE_OBJECT);
 	json->push_back(json->key_, val);
-	return *this;	
+	return *this;
 }
 
 void Json::push_back(const std::string& key, int val)
@@ -242,9 +292,14 @@ const std::string Json::dump(int spaces) const
     return str;
 }
 
-int Json::type()
+int Json::type() const
 {
 	return val_->type();
+}
+
+bool Json::empty() const
+{
+	return val_->empty();
 }
 
 void JsonValue::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
