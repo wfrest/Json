@@ -124,6 +124,38 @@ Json& Json::operator=(double val)
 	return *this;
 }
 
+Json& Json::operator=(bool val)
+{
+	Json* json = this->parent_;
+	assert(json->type() == JSON_VALUE_OBJECT);
+	json->push_back(json->key_, val);
+	return *this;
+}
+
+Json& Json::operator=(const std::string& val)
+{
+	Json* json = this->parent_;
+	assert(json->type() == JSON_VALUE_OBJECT);
+	json->push_back(json->key_, val);
+	return *this;
+}
+
+Json& Json::operator=(const char* val)
+{
+	Json* json = this->parent_;
+	assert(json->type() == JSON_VALUE_OBJECT);
+	json->push_back(json->key_, val);
+	return *this;
+}
+
+Json& Json::operator=(std::nullptr_t val)
+{
+	Json* json = this->parent_;
+	assert(json->type() == JSON_VALUE_OBJECT);
+	json->push_back(json->key_, val);
+	return *this;
+}
+
 void Json::push_back(const std::string& key, int val)
 {
 	val_->push_back(key, val);

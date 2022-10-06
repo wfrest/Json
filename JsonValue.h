@@ -58,8 +58,6 @@ public:
     JsonValue(JsonValue&& other) = delete;
     JsonValue& operator=(JsonValue&& other) = delete;
 
-    void operator=(const std::string& str);
-
 	json_value_t* json() { return json_; }
 
 	bool can_push_back();
@@ -80,7 +78,7 @@ public:
 
 	bool empty() const;
 
-	bool assign(const json_value_t *json);
+	bool assign(const json_value_t *json);  // for empty JsonValue
 public:
     static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
 

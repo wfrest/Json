@@ -52,6 +52,11 @@ public:
     // todo : need meta programming to optimize
     Json& operator=(int val);
     Json& operator=(double val);
+    Json& operator=(bool val);
+    Json& operator=(const std::string& val);
+    Json& operator=(const char* val);
+    Json& operator=(std::nullptr_t val);
+
     void push_back(const std::string& key, int val);
     void push_back(const std::string& key, double val);
     void push_back(const std::string& key, bool val);

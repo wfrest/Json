@@ -44,14 +44,23 @@ TEST(JsonTest, multi_level_multi)
     EXPECT_EQ(data.dump(), R"({"test":{"test1":1},"test2":2})");
 }
 
-
-TEST(JsonTest, other_type)
+TEST(JsonTest, push_other_type)
 {
     Json data;
     data.push_back("test1", false);
     data.push_back("test2", true);
     data.push_back("test3", "string");
     data.push_back("test4", nullptr);
+    EXPECT_EQ(data.dump(), R"({"test1":false,"test2":true,"test3":"string","test4":null})");
+}
+
+TEST(JsonTest, other_type)
+{
+    Json data;
+    data["test1"] = false;
+    data["test2"] = true;
+    data["test3"] = "string";
+    data["test4"] = nullptr;
     EXPECT_EQ(data.dump(), R"({"test1":false,"test2":true,"test3":"string","test4":null})");
 }
 
