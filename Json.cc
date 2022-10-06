@@ -185,6 +185,36 @@ void Json::push_back(const std::string& key, const char* val)
 	val_->push_back(key, val);
 }
 
+void Json::push_back(int val)
+{
+	val_->push_back(val);
+}
+
+void Json::push_back(double val)
+{
+	val_->push_back(val);
+}
+
+void Json::push_back(bool val)
+{
+	val_->push_back(val);
+}
+
+void Json::push_back(const std::string& val)
+{
+	val_->push_back(val);
+}
+
+void Json::push_back(const char* val)
+{
+	val_->push_back(val);
+}
+
+void Json::push_back(std::nullptr_t val)
+{
+	val_->push_back(val);
+}
+
 const std::string Json::dump() const
 {
     return dump(0);

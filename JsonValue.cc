@@ -42,7 +42,7 @@ bool JsonValue::empty() const
 	}
 }
 
-bool JsonValue::can_push_back()
+bool JsonValue::can_obj_push_back()
 {
 	if(this->type() == JSON_VALUE_NULL)
 	{
@@ -62,7 +62,7 @@ void JsonValue::push_back(const std::string& key, int val)
 
 void JsonValue::push_back(const std::string& key, double val)
 {
-	if(!can_push_back())
+	if(!can_obj_push_back())
 	{
 		return;
 	}
@@ -72,7 +72,7 @@ void JsonValue::push_back(const std::string& key, double val)
 
 void JsonValue::push_back(const std::string& key, bool val)
 {
-	if(!can_push_back())
+	if(!can_obj_push_back())
 	{
 		return;
 	}
@@ -88,7 +88,7 @@ void JsonValue::push_back(const std::string& key, bool val)
 
 void JsonValue::push_back(const std::string& key, const std::string& val)
 {
-	if(!can_push_back())
+	if(!can_obj_push_back())
 	{
 		return;
 	}
@@ -98,7 +98,7 @@ void JsonValue::push_back(const std::string& key, const std::string& val)
 
 void JsonValue::push_back(const std::string& key, const char* val)
 {
-	if(!can_push_back())
+	if(!can_obj_push_back())
 	{
 		return;
 	}
@@ -108,7 +108,7 @@ void JsonValue::push_back(const std::string& key, const char* val)
 
 void JsonValue::push_back(const std::string& key, std::nullptr_t val)
 {
-	if(!can_push_back())
+	if(!can_obj_push_back())
 	{
 		return;
 	}
@@ -116,11 +116,91 @@ void JsonValue::push_back(const std::string& key, std::nullptr_t val)
 	json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
 }
 
+bool JsonValue::can_arr_push_back()
+{
+	if(this->type() == JSON_VALUE_NULL)
+	{
+		this->to_array();
+	}
+	else if(this->type() != JSON_VALUE_ARRAY)
+	{
+		return false;
+	}
+	return true;
+}
+
+void JsonValue::push_back(int val)
+{
+	this->push_back(static_cast<double>(val));
+}
+
+void JsonValue::push_back(double val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(json_);
+	json_array_append(arr, JSON_VALUE_NUMBER, val);
+}
+
+void JsonValue::push_back(bool val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(json_);
+    if(val)
+    {
+		json_array_append(arr, JSON_VALUE_TRUE);
+    } else 
+    {
+		json_array_append(arr, JSON_VALUE_FALSE);
+    }
+}
+
+void JsonValue::push_back(const std::string& val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(json_);
+	json_array_append(arr, JSON_VALUE_STRING, val.c_str());
+}
+
+void JsonValue::push_back(const char* val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(json_);
+	json_array_append(arr, JSON_VALUE_STRING, val);
+}
+
+void JsonValue::push_back(std::nullptr_t val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(json_);
+	json_array_append(arr, JSON_VALUE_NULL);
+}
+
 void JsonValue::to_object()
 {
 	// TODO : optimize
 	json_value_destroy(json_);
 	json_ = json_value_create(JSON_VALUE_OBJECT);
+}
+
+void JsonValue::to_array()
+{
+	json_value_destroy(json_);
+	json_ = json_value_create(JSON_VALUE_ARRAY);
 }
 
 const json_value_t* JsonValue::create_sub_object(const std::string& key)
@@ -140,7 +220,6 @@ bool JsonValue::assign(const json_value_t *json)
 	allocate_ = false;
 	return true;
 }
-
 
 void JsonValue::value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str)
 {

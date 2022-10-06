@@ -51,9 +51,9 @@ public:
     bool is_array() const;
     bool is_string() const;
 
-    int size() const;
+    int size() const; 
     bool empty() const;
-    void clear();
+    void clear(); 
 public:
     // object
     Json& operator[](const std::string& key);
@@ -71,6 +71,14 @@ public:
     void push_back(const std::string& key, const std::string& val);
     void push_back(const std::string& key, const char* val);
     void push_back(const std::string& key, std::nullptr_t val);
+
+    void push_back(int val);
+    void push_back(double val);
+    void push_back(bool val);
+    void push_back(const std::string& val);
+    void push_back(const char* val);
+    void push_back(std::nullptr_t val);
+    
 private:    
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
 

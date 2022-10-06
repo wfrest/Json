@@ -162,9 +162,19 @@ void test03()
 	json_value_destroy(json);
 }
 
+void test04()
+{
+	json_value_t *json = json_value_create(JSON_VALUE_ARRAY);
+	json_array_t *test_arr = json_value_array(json);
+	json_array_append(test_arr, JSON_VALUE_NULL);
+	print_json_value(json, 0);
+	json_value_destroy(json);	
+}
+
 int main()
 {
-	test03();
+	// test03();
+	test04();
 	return 0;
 }
 

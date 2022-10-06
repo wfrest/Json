@@ -77,6 +77,17 @@ TEST(JsonTest, clear)
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
 }
 
+TEST(JsonTest, arr_push)
+{
+    Json data;
+    data.push_back(1);
+    data.push_back(nullptr);
+    data.push_back("string");
+    data.push_back(true);
+    data.push_back(false);
+    EXPECT_EQ(data.dump(), R"([1,null,"string",true,false])");
+}
+
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

@@ -60,13 +60,22 @@ public:
 
 	json_value_t* json() { return json_; }
 
-	bool can_push_back();
+	bool can_obj_push_back();
 	void push_back(const std::string& key, int val);    
 	void push_back(const std::string& key, double val);
     void push_back(const std::string& key, bool val);
     void push_back(const std::string& key, const std::string& val);
     void push_back(const std::string& key, const char* val);
     void push_back(const std::string& key, std::nullptr_t val);
+
+
+    bool can_arr_push_back();
+	void push_back(int val);    
+	void push_back(double val);
+    void push_back(bool val);
+    void push_back(const std::string& val);
+    void push_back(const char* val);
+    void push_back(std::nullptr_t val);
 
 	const json_value_t* create_sub_object(const std::string& key);
 
@@ -79,6 +88,8 @@ public:
 	bool empty() const;
 
 	void to_object();
+
+    void to_array();
 
 	bool assign(const json_value_t *json);  // for empty JsonValue
 public:
