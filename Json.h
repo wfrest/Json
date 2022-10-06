@@ -32,7 +32,8 @@ public:
     Json(JsonValue* val);
     ~Json();
 
-    
+    Json(const Json& json) = delete;
+    Json& operator=(const Json& json) = delete;
     Json(Json&& other);
     Json& operator=(Json&& other);
 
@@ -53,7 +54,10 @@ public:
     Json& operator=(double val);
     void push_back(const std::string& key, int val);
     void push_back(const std::string& key, double val);
-
+    void push_back(const std::string& key, bool val);
+    void push_back(const std::string& key, const std::string& val);
+    void push_back(const std::string& key, const char* val);
+    void push_back(const std::string& key, std::nullptr_t val);
 private:    
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
 

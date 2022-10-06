@@ -13,6 +13,8 @@ if is_mode("release") then
     set_strip("all")
 end
 
+add_requires("gtest")
+
 add_includedirs("./")
 
 target("Json")

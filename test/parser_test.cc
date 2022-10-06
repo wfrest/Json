@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include "json_parser.h"
 
 #define BUFSIZE		(64 * 1024 * 1024)
@@ -155,6 +156,8 @@ void test03()
 	const json_value_t* json1 = json_object_append(test_obj, "1111", JSON_VALUE_OBJECT);
 	json_object_t *test_obj1 = json_value_object(json1);
 	json_object_append(test_obj1, "test", JSON_VALUE_NUMBER, 123.0);
+	std::string str = "111111";
+	json_object_append(test_obj1, "test1", JSON_VALUE_STRING, str.c_str());
 	print_json_value(json, 0);
 	json_value_destroy(json);
 }

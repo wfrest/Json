@@ -71,6 +71,7 @@ void test08()
     Json data;
     data.push_back("test", 2.0);
     data.push_back("test1", 1111);
+    data.push_back("test222", "test");
     std::cout << data << std::endl;
 }
 

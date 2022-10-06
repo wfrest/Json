@@ -14,3 +14,8 @@ https://stackoverflow.com/questions/41253751/how-does-nlohmannjson-implement-the
 ## xmake debug
 
 https://github.com/xmake-io/xmake/discussions/2090
+
+## String literal matches bool overload instead of std::string
+
+https://stackoverflow.com/questions/14770252/string-literal-matches-bool-overload-instead-of-stdstring
+
