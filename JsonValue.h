@@ -74,9 +74,11 @@ public:
 	// todo : need optimize in modern way
 	int type() const;
 
-	void to_object();
+    int size() const;
 
 	bool empty() const;
+
+	void to_object();
 
 	bool assign(const json_value_t *json);  // for empty JsonValue
 public:

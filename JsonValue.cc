@@ -8,9 +8,38 @@ int JsonValue::type() const
 	return json_value_type(json_);
 }
 
+int JsonValue::size() const
+{
+	if(type() == JSON_VALUE_ARRAY)
+	{
+		json_array_t* array = json_value_array(json_);
+		return json_array_size(array);
+	} else if(type() == JSON_VALUE_OBJECT)
+	{
+		json_object_t* obj = json_value_object(json_);
+		return json_object_size(obj);
+	}
+	return 1;
+}
+
 bool JsonValue::empty() const
 {
-	return json_ == nullptr;
+	switch (type())
+	{
+		case JSON_VALUE_NULL:
+		{
+			// null values are empty
+			return true;
+		}
+		case JSON_VALUE_ARRAY:
+		case JSON_VALUE_OBJECT:
+		{
+			return size() == 0;			
+		}
+	default:
+		// all other types are nonempty
+		return false;
+	}
 }
 
 bool JsonValue::can_push_back()

@@ -64,6 +64,19 @@ TEST(JsonTest, other_type)
     EXPECT_EQ(data.dump(), R"({"test1":false,"test2":true,"test3":"string","test4":null})");
 }
 
+TEST(JsonTest, clear)
+{
+    Json data;
+    EXPECT_TRUE(data.empty());
+    data["test1"] = false;
+    EXPECT_EQ(data.size(), 1);
+    EXPECT_FALSE(data.empty());
+    data.clear();
+    EXPECT_EQ(data.size(), 0);
+    EXPECT_TRUE(data.empty());
+    EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
+}
+
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

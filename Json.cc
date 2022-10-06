@@ -103,8 +103,7 @@ Json& Json::operator[](const std::string& key)
 	{
 		return it->second;
 	}
-	Json js(new JsonValue);  // empty
-	assert(js.empty());
+	Json js(new JsonValue);
 	this->key_ = key;
 	js.parent_ = this;
 	auto ret = object_.emplace(key, std::move(js));
@@ -204,9 +203,59 @@ int Json::type() const
 	return val_->type();
 }
 
+bool Json::is_null() const
+{
+	return type() == JSON_VALUE_NULL;
+}
+
+bool Json::is_number() const
+{
+	return type() == JSON_VALUE_NUMBER;
+}
+
+bool Json::is_boolean() const
+{
+	int type = this->type();
+	return type == JSON_VALUE_TRUE || type == JSON_VALUE_FALSE;
+}
+
+bool Json::is_object() const
+{
+	return type() == JSON_VALUE_OBJECT;
+}
+
+bool Json::is_array() const
+{
+	return type() == JSON_VALUE_ARRAY;
+}
+
+bool Json::is_string() const
+{
+	return type() == JSON_VALUE_STRING;
+}
+
+int Json::size() const
+{
+	if(is_array())
+	{
+		json_array_t* array = json_value_array(val_->json());
+		return json_array_size(array);
+	} else if(is_object())
+	{
+		json_object_t* obj = json_value_object(val_->json());
+		return json_object_size(obj);
+	}
+	return 1;
+}
+
 bool Json::empty() const
 {
 	return val_->empty();
+}
+
+void Json::clear()
+{
+	val_->to_object();
 }
 
 }  // namespace wfrest

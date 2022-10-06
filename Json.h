@@ -44,8 +44,16 @@ public:
     const std::string dump(int spaces) const;
 
     int type() const;
+    bool is_null() const;
+    bool is_number() const;
+    bool is_boolean() const;
+    bool is_object() const;
+    bool is_array() const;
+    bool is_string() const;
 
+    int size() const;
     bool empty() const;
+    void clear();
 public:
     // object
     Json& operator[](const std::string& key);
@@ -71,7 +79,6 @@ private:
     std::string key_;
     Json* parent_ = nullptr;  // watcher
     JsonValue* val_ = nullptr;
-    int depth_;
 };
 
 }  // namespace wfrest
