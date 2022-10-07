@@ -1,7 +1,7 @@
 #ifndef WFREST_JSON_VALUE_H_
 #define WFREST_JSON_VALUE_H_
 
-#include "Json.h"
+#include <string>
 
 namespace wfrest
 {
@@ -10,8 +10,10 @@ namespace wfrest
 class JsonValue
 {
 public:
-	friend Json;
-
+	// friend Json;
+    JsonValue() 
+        : json_(nullptr) 
+	{}
 	explicit JsonValue(std::nullptr_t)
 		: json_(json_value_create(JSON_VALUE_NULL)) 
 	{}
@@ -36,10 +38,6 @@ public:
         : json_(json_value_parse(str)) 
 	{}
 
-    explicit JsonValue(const Json::Object& obj) 
-        : json_(json_value_create(JSON_VALUE_OBJECT)) 
-	{}
-
 	explicit JsonValue(const json_value_t* val)
 		: allocate_(false), 
 		json_(const_cast<json_value_t *>(val))
@@ -58,7 +56,7 @@ public:
     JsonValue(JsonValue&& other) = delete;
     JsonValue& operator=(JsonValue&& other) = delete;
 
-	json_value_t* json() { return json_; }
+	json_value_t* json() const { return json_; }
 
 	bool can_obj_push_back();
 	void push_back(const std::string& key, int val);    
@@ -67,7 +65,6 @@ public:
     void push_back(const std::string& key, const std::string& val);
     void push_back(const std::string& key, const char* val);
     void push_back(const std::string& key, std::nullptr_t val);
-
 
     bool can_arr_push_back();
 	void push_back(int val);    
@@ -80,7 +77,6 @@ public:
 	const json_value_t* create_sub_object(const std::string& key);
 
 public:
-	// todo : need optimize in modern way
 	int type() const;
 
     int size() const;
@@ -106,11 +102,6 @@ public:
     static void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
 
     static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
-
-private:
-    JsonValue() 
-        : json_(nullptr) 
-	{}
 
 private:
 	bool allocate_ = true;

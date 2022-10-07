@@ -1,3 +1,4 @@
+#include "Json.h"
 #include "JsonValue.h"
 
 namespace wfrest
