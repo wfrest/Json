@@ -10,7 +10,6 @@ namespace wfrest
 class JsonValue
 {
 public:
-	// friend Json;
     JsonValue() 
         : json_(nullptr) 
 	{}
@@ -39,7 +38,7 @@ public:
 	{}
 
 	explicit JsonValue(const json_value_t* val)
-		: allocate_(false), 
+		: allocate_(false),
 		json_(const_cast<json_value_t *>(val))
 	{}
 
@@ -53,8 +52,24 @@ public:
 
 	JsonValue(const JsonValue&) = delete;
 	JsonValue& operator=(const JsonValue&) = delete;
-    JsonValue(JsonValue&& other) = delete;
-    JsonValue& operator=(JsonValue&& other) = delete;
+    
+    JsonValue(JsonValue&& other)
+    {
+        json_ = other.json_;
+        other.json_ = nullptr;
+    }
+
+    JsonValue& operator=(JsonValue&& other)
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+        json_value_destroy(json_);
+        json_ = other.json_;
+        other.json_ = nullptr; 
+        return *this;
+    }
 
 	json_value_t* json() const { return json_; }
 

@@ -17,17 +17,15 @@ namespace wfrest
 
 class Json
 {
-public:
-    using Object = std::map<std::string, Json>;
 public: 
     // Constructors for the various types of JSON value.
     Json() : val_(nullptr) {}
     Json(const std::string& str) : val_(str) {}
     Json(const char* str) : val_(str) {}
     Json(std::nullptr_t null) : val_(null) {}
-    Json(double value) : val_(value) {}
-    Json(int value) : val_(value) {}
-    Json(bool value) : val_(value) {}
+    Json(double val) : val_(val) {}
+    Json(int val) : val_(val) {}
+    Json(bool val) : val_(val) {}
     ~Json() = default;
 
     Json(const Json& json) = delete;
@@ -114,12 +112,35 @@ public:
     {
         val_.push_back(val);
     }
+
+    // todo : template<typename T>
+    bool has(const std::string& key) const
+    {
+        if (!is_object())
+        {
+            return false;
+        }
+        const auto it = object_.find(key);
+        if(it != object_.end())
+        {
+            return true;
+        }
+        json_object_t* obj = json_value_object(val_.json());
+        const json_value_t* val = json_object_find(key.c_str(), obj);
+        return val == nullptr ? false : true;
+    }
     
-private:    
+private:
+    Json create_incomplete_json();
+
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
+private:
+    Json(JsonValue &&val) : val_(std::move(val)) {}
+
+    Json(const json_value_t* val) : val_(val) {}
 
 private:
-    Object object_;
+    std::map<std::string, Json> object_;
     std::string key_;
     Json* parent_ = nullptr;  // watcher
     JsonValue val_;

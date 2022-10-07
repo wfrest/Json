@@ -22,6 +22,7 @@ TEST(JsonTest, one_level_multi)
 {
     Json data;
     data["test"] = 1.0;
+    EXPECT_TRUE(data.has("test"));
     data["test1"] = 2;
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
     EXPECT_EQ(data.dump(), R"({"test":1,"test1":2})");

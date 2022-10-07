@@ -32,6 +32,13 @@ Json Json::parse(const std::ifstream& stream)
     return Json(buffer.str());
 }
 
+Json Json::create_incomplete_json()
+{
+	JsonValue val;  // json_ == nullptr
+	Json js(std::move(val));
+	return js;
+}
+
 Json& Json::operator[](const std::string& key)
 {
 	Json* parent = this->parent_;
@@ -49,10 +56,10 @@ Json& Json::operator[](const std::string& key)
 	{
 		return it->second;
 	}
-	Json js(new JsonValue);
+	Json imcomplet_js = create_incomplete_json();
 	this->key_ = key;
-	js.parent_ = this;
-	auto ret = object_.emplace(key, std::move(js));
+	imcomplet_js.parent_ = this;
+	auto ret = object_.emplace(key, std::move(imcomplet_js));
 	return ret.first->second;
 }
 
