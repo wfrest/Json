@@ -17,6 +17,16 @@ namespace wfrest
 
 class Json
 {
+public:
+    struct Array
+    {
+        Array() = default;
+    };
+
+    struct Object
+    {
+        Object() = default;
+    };
 public: 
     // Constructors for the various types of JSON value.
     Json() : val_(nullptr) {}
@@ -26,6 +36,8 @@ public:
     Json(double val) : val_(val) {}
     Json(int val) : val_(val) {}
     Json(bool val) : val_(val) {}
+    Json(const Array& val) : val_(json_value_create(JSON_VALUE_ARRAY), true) {}
+    Json(const Object& val) : val_(json_value_create(JSON_VALUE_OBJECT), true) {}
     ~Json() = default;
 
     Json(const Json& json) = delete;
@@ -88,6 +100,8 @@ public:
         val_.to_object();
     }
 
+    template <typename T> bool is() const;
+    // template <typename T> T &get();
 public:
     // object
     Json& operator[](const std::string& key);
@@ -129,7 +143,7 @@ public:
         const json_value_t* val = json_object_find(key.c_str(), obj);
         return val == nullptr ? false : true;
     }
-    
+
 private:
     Json create_incomplete_json();
 
@@ -145,6 +159,36 @@ private:
     Json* parent_ = nullptr;  // watcher
     JsonValue val_;
 };
+
+template <> inline bool Json::is<std::nullptr_t>() const {                                                                               \
+    return is_null();                                                                           \
+}
+
+// todo : optimize 
+// typename std::enable_if<is_arithmetic<T>::value, T>::type
+template <> inline bool Json::is<int>() const {                                                                               \
+    return is_number();                                                                                  \
+}
+
+template <> inline bool Json::is<double>() const {                                                                               \
+    return is_number();                                                                                  \
+}
+
+template <> inline bool Json::is<bool>() const {                                                                               \
+    return is_boolean();                                                   \
+}
+
+template <> inline bool Json::is<Json::Object>() const {                                                                               \
+    return is_object();                                                                                \
+}
+
+template <> inline bool Json::is<Json::Array>() const {                                                                               \
+    return is_array();                                                           \
+}
+
+template <> inline bool Json::is<std::string>() const {                                                                               \
+    return is_string();                                                      \
+}
 
 }  // namespace wfrest
 

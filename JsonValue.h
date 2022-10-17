@@ -6,6 +6,8 @@
 namespace wfrest
 {
 
+class Json;
+
 // inner class
 class JsonValue
 {
@@ -35,6 +37,11 @@ public:
 
     explicit JsonValue(const char* str) 
         : json_(json_value_parse(str)) 
+	{}
+
+    explicit JsonValue(const json_value_t* val, bool allocate)
+		: allocate_(allocate),
+		json_(const_cast<json_value_t *>(val))
 	{}
 
 	explicit JsonValue(const json_value_t* val)
