@@ -102,6 +102,7 @@ public:
 
     template <typename T> bool is() const;
     // template <typename T> T &get();
+    // template <typename T> const T &get() const;
 public:
     // object
     Json& operator[](const std::string& key);
@@ -160,34 +161,41 @@ private:
     JsonValue val_;
 };
 
-template <> inline bool Json::is<std::nullptr_t>() const {                                                                               \
-    return is_null();                                                                           \
+// is<type>
+template <> inline bool Json::is<std::nullptr_t>() const 
+{
+    return is_null();
 }
 
 // todo : optimize 
 // typename std::enable_if<is_arithmetic<T>::value, T>::type
-template <> inline bool Json::is<int>() const {                                                                               \
-    return is_number();                                                                                  \
+template <> inline bool Json::is<int>() const 
+{
+    return is_number();
 }
 
-template <> inline bool Json::is<double>() const {                                                                               \
-    return is_number();                                                                                  \
+template <> inline bool Json::is<double>() const 
+{
+    return is_number();
 }
 
-template <> inline bool Json::is<bool>() const {                                                                               \
-    return is_boolean();                                                   \
+template <> inline bool Json::is<bool>() const 
+{
+    return is_boolean();   
 }
 
-template <> inline bool Json::is<Json::Object>() const {                                                                               \
-    return is_object();                                                                                \
+template <> inline bool Json::is<Json::Object>() const 
+{
+    return is_object();
 }
 
-template <> inline bool Json::is<Json::Array>() const {                                                                               \
-    return is_array();                                                           \
+template <> inline bool Json::is<Json::Array>() const {
+    return is_array();   
 }
 
-template <> inline bool Json::is<std::string>() const {                                                                               \
-    return is_string();                                                      \
+template <> inline bool Json::is<std::string>() const 
+{
+    return is_string();
 }
 
 }  // namespace wfrest
