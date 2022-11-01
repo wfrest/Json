@@ -10,7 +10,6 @@
 #include <map>
 #include <cassert>
 #include "json_parser.h"
-#include "JsonValue.h"
 
 namespace wfrest
 {
@@ -18,44 +17,40 @@ namespace wfrest
 class Json
 {
 public:
-    struct Array
-    {
-        Array() = default;
-    };
-
     struct Object
     {
         Object() = default;
+        ~Object() = default;
     };
+
+    struct Array
+    {
+        Array() = default;
+        ~Array() = default;
+    };
+
 public: 
     // Constructors for the various types of JSON value.
-    Json() : val_(nullptr) {}
-    Json(const std::string& str) : val_(str) {}
-    Json(const char* str) : val_(str) {}
-    Json(std::nullptr_t null) : val_(null) {}
-    Json(double val) : val_(val) {}
-    Json(int val) : val_(val) {}
-    Json(bool val) : val_(val) {}
-    Json(const Array& val) : val_(json_value_create(JSON_VALUE_ARRAY), true) {}
-    Json(const Object& val) : val_(json_value_create(JSON_VALUE_OBJECT), true) {}
-    ~Json() = default;
+    Json();
+    Json(const std::string& str);
+    Json(const char* str);
+    Json(std::nullptr_t null);
+    Json(double val);
+    Json(int val);
+    Json(bool val);
+    Json(const Array& val);
+    Json(const Object& val);
 
-    Json(const Json& json) = delete;
-    Json& operator=(const Json& json) = delete;
-    Json(Json&& other);
-    Json& operator=(Json&& other);
+    ~Json();
 
-    static Json parse(const std::string &str);
-    static Json parse(const std::ifstream& stream);
-    
-    const std::string dump() const;
-    const std::string dump(int spaces) const;
+    Json operator[](const std::string& key);
+
+private:
+    Json(bool allocate);
+    Json(json_object_t* obj);
 
 public:
-    int type() const
-    {
-        return val_.type();
-    }
+    int type() const { return json_value_type(root_); }
 
     bool is_null() const
     {
@@ -88,115 +83,10 @@ public:
         return type() == JSON_VALUE_STRING;
     }
 
-    int size() const;
-
-    bool empty() const
-    {
-        return val_.empty();
-    }
-
-    void clear()
-    {
-        val_.to_object();
-    }
-
-    template <typename T> bool is() const;
-    // template <typename T> T &get();
-    // template <typename T> const T &get() const;
-public:
-    // object
-    Json& operator[](const std::string& key);
-    
-    template <typename T>
-    Json& operator=(const T& val)
-    {
-        Json* json = this->parent_;
-        assert(json->type() == JSON_VALUE_OBJECT);
-        json->push_back(json->key_, val);
-        return *this;
-    }
-
-    template <typename T>
-    void push_back(const std::string& key, const T& val)
-    {
-        val_.push_back(key, val);
-    }
-
-    template <typename T>
-    void push_back(const T& val)
-    {
-        val_.push_back(val);
-    }
-
-    // todo : template<typename T>
-    bool has(const std::string& key) const
-    {
-        if (!is_object())
-        {
-            return false;
-        }
-        const auto it = object_.find(key);
-        if(it != object_.end())
-        {
-            return true;
-        }
-        json_object_t* obj = json_value_object(val_.json());
-        const json_value_t* val = json_object_find(key.c_str(), obj);
-        return val == nullptr ? false : true;
-    }
-
 private:
-    Json create_incomplete_json();
-
-    friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
-private:
-    Json(JsonValue &&val) : val_(std::move(val)) {}
-
-    Json(const json_value_t* val) : val_(val) {}
-
-private:
-    std::map<std::string, Json> object_;
-    std::string key_;
-    Json* parent_ = nullptr;  // watcher
-    JsonValue val_;
+    json_value_t *root_ = nullptr;
+    bool allocate_ = false;
 };
-
-// is<type>
-template <> inline bool Json::is<std::nullptr_t>() const 
-{
-    return is_null();
-}
-
-// todo : optimize 
-// typename std::enable_if<is_arithmetic<T>::value, T>::type
-template <> inline bool Json::is<int>() const 
-{
-    return is_number();
-}
-
-template <> inline bool Json::is<double>() const 
-{
-    return is_number();
-}
-
-template <> inline bool Json::is<bool>() const 
-{
-    return is_boolean();   
-}
-
-template <> inline bool Json::is<Json::Object>() const 
-{
-    return is_object();
-}
-
-template <> inline bool Json::is<Json::Array>() const {
-    return is_array();   
-}
-
-template <> inline bool Json::is<std::string>() const 
-{
-    return is_string();
-}
 
 }  // namespace wfrest
 

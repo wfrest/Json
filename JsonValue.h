@@ -2,58 +2,46 @@
 #define WFREST_JSON_VALUE_H_
 
 #include <string>
+#include "json_parser.h"
 
 namespace wfrest
 {
 
-class Json;
-
-// inner class
 class JsonValue
 {
 public:
-    JsonValue() 
-        : json_(nullptr) 
+    JsonValue()
+        : node_(nullptr)
 	{}
 	explicit JsonValue(std::nullptr_t)
-		: json_(json_value_create(JSON_VALUE_NULL)) 
+		: node_(json_value_create(JSON_VALUE_NULL))
 	{}
 
     explicit JsonValue(double value) 
-		: json_(json_value_create(JSON_VALUE_NUMBER, value)) 
+		: node_(json_value_create(JSON_VALUE_NUMBER, value)) 
 	{}
 
     explicit JsonValue(int value)
-		: json_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(value))) 
+		: node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(value))) 
 	{}
 
     explicit JsonValue(bool value)
-		: json_(value ? json_value_create(JSON_VALUE_TRUE) : json_value_create(JSON_VALUE_FALSE)) 
+		: node_(value ? json_value_create(JSON_VALUE_TRUE) : json_value_create(JSON_VALUE_FALSE)) 
 	{}
 
     explicit JsonValue(const std::string& str) 
-        : json_(json_value_parse(str.c_str())) 
+        : node_(json_value_parse(str.c_str())) 
 	{}
 
     explicit JsonValue(const char* str) 
-        : json_(json_value_parse(str)) 
-	{}
-
-    explicit JsonValue(const json_value_t* val, bool allocate)
-		: allocate_(allocate),
-		json_(const_cast<json_value_t *>(val))
-	{}
-
-	explicit JsonValue(const json_value_t* val)
-		: allocate_(false),
-		json_(const_cast<json_value_t *>(val))
+        : node_(json_value_parse(str)) 
 	{}
 
     ~JsonValue()
     {
-        if(json_ && allocate_) 
+        if(node_) 
         {
-            json_value_destroy(json_);
+            json_value_destroy(node_);
         }
     }
 
@@ -125,10 +113,6 @@ public:
 
     static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
 
-private:
-	bool allocate_ = true;
-    std::string key_;
-    json_value_t *json_ = nullptr;
 };
 
 }  // namespace wfrest

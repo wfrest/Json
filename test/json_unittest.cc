@@ -94,38 +94,30 @@ TEST(JsonTest, is_type)
     Json null1 = nullptr;
     EXPECT_EQ(null1.type(), JSON_VALUE_NULL);
     EXPECT_TRUE(null1.is_null());
-    EXPECT_TRUE(null1.is<std::nullptr_t>());
 
     Json num1 = 1;
     EXPECT_EQ(num1.type(), JSON_VALUE_NUMBER);
     EXPECT_TRUE(num1.is_number());
-    EXPECT_TRUE(num1.is<int>());
 
     Json num2 = 1.0;
     EXPECT_EQ(num2.type(), JSON_VALUE_NUMBER);
     EXPECT_TRUE(num2.is_number());
-    EXPECT_TRUE(num2.is<double>());
 
     Json bool1 = true;
     EXPECT_EQ(bool1.type(), JSON_VALUE_TRUE);
     EXPECT_TRUE(bool1.is_boolean());
-    EXPECT_TRUE(bool1.is<bool>());
 
     Json bool2 = false;
     EXPECT_EQ(bool2.type(), JSON_VALUE_FALSE);
     EXPECT_TRUE(bool2.is_boolean());
-    EXPECT_TRUE(bool2.is<bool>());
     
     Json obj1 = Json::Object();
     EXPECT_EQ(obj1.type(), JSON_VALUE_OBJECT);
     EXPECT_TRUE(obj1.is_object());
-    EXPECT_TRUE(obj1.is<Json::Object>());  
 
     Json arr1 = Json::Array();
     EXPECT_EQ(arr1.type(), JSON_VALUE_ARRAY);
     EXPECT_TRUE(arr1.is_array());
-    EXPECT_TRUE(arr1.is<Json::Array>());  
-    EXPECT_FALSE(arr1.is<Json::Object>());
 }
 
 int main(int argc, char **argv) {

@@ -3,91 +3,76 @@
 namespace wfrest
 {
 
-Json::Json(Json&& other)
+Json::Json() 
+	: root_(json_value_create(JSON_VALUE_NULL)),
+	allocate_(true)
+{}
+
+Json::Json(const std::string& str)
+	: root_(json_value_parse(str.c_str())),
+	allocate_(true)
+{}
+
+Json::Json(const char* str)
+	: root_(json_value_parse(str)),
+	allocate_(true) 
+{}
+
+Json::Json(std::nullptr_t null)
+	: root_(json_value_create(JSON_VALUE_NULL)),
+	allocate_(true)
+{}
+
+Json::Json(double val)
+	: root_(json_value_create(JSON_VALUE_NUMBER, val)),
+	allocate_(true)
+{}
+
+Json::Json(int val)
+	: root_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val))),
+	allocate_(true)
+{}
+
+Json::Json(bool val)
+	: root_(val ? json_value_create(JSON_VALUE_TRUE) : json_value_create(JSON_VALUE_FALSE)),
+	allocate_(true)
+{}
+
+Json::Json(const Array& val)
+	: root_(json_value_create(JSON_VALUE_OBJECT)),
+	allocate_(true)
+{}
+
+Json::Json(const Object& val)
+	: root_(json_value_create(JSON_VALUE_ARRAY)),
+	allocate_(true)
+{}
+
+Json::~Json()
 {
-	parent_ = other.parent_;
-	other.parent_ = nullptr; 
+	json_value_destroy(root_);
 }
 
-Json& Json::operator=(Json&& other)
+Json::Json(bool allocate) 
+	: root_(nullptr), 
+	allocate_(allocate)
+{}
+
+Json::Json(json_object_t* obj)
+	: allocate_(false)
 {
-	if (this == &other)
+	
+}
+
+Json Json::operator[](const std::string& key)
+{
+	if (is_object()) 
 	{
-		return *this;
+		return Json(false);
 	}
-	parent_ = other.parent_;
-	other.parent_ = nullptr; 
-	return *this;
-}
-
-Json Json::parse(const std::string &str)
-{
-    return Json(str);
-}
-
-Json Json::parse(const std::ifstream& stream)
-{
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
-    return Json(buffer.str());
-}
-
-Json Json::create_incomplete_json()
-{
-	JsonValue val;  // json_ == nullptr
-	Json js(std::move(val));
-	return js;
-}
-
-Json& Json::operator[](const std::string& key)
-{
-	Json* parent = this->parent_;
-	if(parent)
-	{
-		const json_value_t* sub_obj = parent->val_.create_sub_object(parent->key_);
-		val_.assign(sub_obj);
-	} 
-	if(val_.type() == JSON_VALUE_NULL)
-	{
-		val_.to_object();
-	}
-	auto it = object_.find(key);
-	if(it != object_.end())
-	{
-		return it->second;
-	}
-	Json imcomplet_js = create_incomplete_json();
-	this->key_ = key;
-	imcomplet_js.parent_ = this;
-	auto ret = object_.emplace(key, std::move(imcomplet_js));
-	return ret.first->second;
-}
-
-const std::string Json::dump() const
-{
-    return dump(0);
-}
-
-const std::string Json::dump(int spaces) const
-{
-	std::string str;
-    str.reserve(64);
-    JsonValue::value_convert(val_.json(), spaces, 0, &str);
-    return str;
-}
-
-int Json::size() const
-{
-	if(is_array())
-	{
-		json_array_t* array = json_value_array(val_.json());
-		return json_array_size(array);
-	} else if(is_object())
-	{
-		json_object_t* obj = json_value_object(val_.json());
-		return json_object_size(obj);
-	}
-	return 1;
+	json_object_t *obj = json_value_object(root_);
+	json_object_append(obj, key.c_str(), JSON_VALUE_OBJECT);
+	return Json(obj);
 }
 
 }  // namespace wfrest
