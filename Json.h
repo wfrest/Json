@@ -30,24 +30,20 @@ public:
     };
 
 public: 
-    // Constructors for the various types of JSON value.
-    Json();
-    Json(const std::string& str);
-    Json(const char* str);
-    Json(std::nullptr_t null);
-    Json(double val);
-    Json(int val);
-    Json(bool val);
-    Json(const Array& val);
-    Json(const Object& val);
 
-    ~Json();
+    static Json parse(const std::string &str);
+    static Json parse(const std::ifstream& stream);
+    
+    const std::string dump() const;
+    const std::string dump(int spaces) const;
 
     Json operator[](const std::string& key);
 
-private:
-    Json(bool allocate);
-    Json(json_object_t* obj);
+    template <typename T>
+    void operator=(const T& val)
+    {
+        this->push_back(key_, val);
+    }
 
 public:
     int type() const { return json_value_type(root_); }
@@ -83,9 +79,85 @@ public:
         return type() == JSON_VALUE_STRING;
     }
 
+    int size() const;
+
+	bool empty() const;
+
+    void clear();
+
+public:
+	void push_back(const std::string& key, int val);    
+	void push_back(const std::string& key, double val);
+    void push_back(const std::string& key, bool val);
+    void push_back(const std::string& key, const std::string& val);
+    void push_back(const std::string& key, const char* val);
+    void push_back(const std::string& key, std::nullptr_t val);
+
+	void push_back(int val);
+	void push_back(double val);
+    void push_back(bool val);
+    void push_back(const std::string& val);
+    void push_back(const char* val);
+    void push_back(std::nullptr_t val);
+
+private:
+    bool can_obj_push_back();
+
+    bool can_arr_push_back();
+
+	void to_object();
+
+    void to_array();
+
+private:
+    // for parse
+    static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
+
+    static void string_convert(const char *raw_str, std::string* out_str);
+
+    static void number_convert(double number, std::string* out_str);
+
+    static void array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str);
+
+    static void array_convert_not_format(const json_array_t *arr, std::string* out_str);
+
+    static void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
+
+    static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
+
+    friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
+public:
+    // Constructors for the various types of JSON value.
+    Json();
+    Json(const std::string& str);
+    Json(const char* str);
+    Json(std::nullptr_t null);
+    Json(double val);
+    Json(int val);
+    Json(bool val);
+    Json(const Array& val);
+    Json(const Object& val);
+
+    ~Json();
+
+    Json(const Json& json) = delete;
+    Json& operator=(const Json& json) = delete;
+    Json(Json&& other);
+    Json& operator=(Json&& other);
+
+private:
+    struct Empty {};
+    // watcher
+    Json(const json_value_t *val, std::string&& key);
+    Json(const json_value_t *val, const std::string& key);
+    Json(const json_value_t *val);
+    Json(const Empty&);
+
+    bool is_valid() { return root_ != nullptr; }
 private:
     json_value_t *root_ = nullptr;
     bool allocate_ = false;
+    std::string key_;
 };
 
 }  // namespace wfrest
