@@ -147,6 +147,25 @@ Json Json::operator[](const std::string& key)
 	return Json(val, key);
 }
 
+Json Json::operator[](int index)
+{
+	if (!this->is_array() || index < 0)
+	{
+		return Json(Empty());
+	}
+	const json_value_t *val;
+	json_array_t *arr = json_value_array(root_);
+	json_array_for_each(val, arr)
+	{
+		if(index == 0)
+		{
+			return Json(val);
+		}
+		index--;
+	}
+	return Json(Empty());
+}
+
 bool Json::can_obj_push_back()
 {
 	if(this->type() == JSON_VALUE_NULL)

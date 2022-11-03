@@ -14,23 +14,53 @@
 namespace wfrest
 {
 
+namespace detail
+{
+
+template <typename T>
+struct is_string
+{
+    static constexpr bool value = false;
+};
+
+template <class T, class Traits, class Alloc>
+struct is_string<std::basic_string<T, Traits, Alloc>>
+{
+    static constexpr bool value = true;
+};
+
+template<typename C> 
+struct is_char : std::integral_constant<bool, std::is_same<C, char>::value ||
+                                              std::is_same<C, char16_t>::value ||
+                                              std::is_same<C, char32_t>::value ||
+                                              std::is_same<C, wchar_t>::value>  {};
+
+} // namespace detail
+
 class Json
 {
 public:
-    struct Object
+    class Object
     {
+    public:
         Object() = default;
+        Object(json_value_t *node) : node_(node) {} 
         ~Object() = default;
+    private:
+        json_value_t *node_;
     };
 
-    struct Array
+    class Array
     {
+    public:
         Array() = default;
+        Array(json_value_t *node) : node_(node) {} 
         ~Array() = default;
+    private:
+        json_value_t *node_;
     };
 
 public: 
-
     static Json parse(const std::string &str);
     static Json parse(const std::ifstream& stream);
     
@@ -39,10 +69,62 @@ public:
 
     Json operator[](const std::string& key);
 
+    Json operator[](int index);
+
     template <typename T>
     void operator=(const T& val)
     {
         this->push_back(key_, val);
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, bool>::value, T>::type
+    get() const
+    {
+        return json_value_type(root_) == JSON_VALUE_TRUE ? true : false;
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_arithmetic<T>::value && 
+                            !std::is_same<T, bool>::value &&
+                            !detail::is_char<T>::value, T>::type
+    get() const
+    {
+        return static_cast<T>(json_value_number(root_));
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, Object>::value, T>::type
+    get() const
+    {
+        return Object(root_);
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, Array>::value, T>::type
+    get() const
+    {
+        return Array(root_);
+    }
+
+    template <typename T>
+    typename std::enable_if<detail::is_string<T>::value, T>::type
+    get() const
+    {
+        return std::string(json_value_string(root_));
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, std::nullptr_t>::value, T>::type
+    get() const
+    {
+        return nullptr;
+    }
+
+    template <typename T>
+    operator T() 
+    {
+        return get<T>();
     }
 
 public:
