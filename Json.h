@@ -10,52 +10,125 @@
 #include <map>
 #include <cassert>
 #include "json_parser.h"
-#include "JsonValue.h"
 
 namespace wfrest
 {
 
+namespace detail
+{
+
+template <typename T>
+struct is_string
+{
+    static constexpr bool value = false;
+};
+
+template <class T, class Traits, class Alloc>
+struct is_string<std::basic_string<T, Traits, Alloc>>
+{
+    static constexpr bool value = true;
+};
+
+template<typename C> 
+struct is_char : std::integral_constant<bool, std::is_same<C, char>::value ||
+                                              std::is_same<C, char16_t>::value ||
+                                              std::is_same<C, char32_t>::value ||
+                                              std::is_same<C, wchar_t>::value>  {};
+
+} // namespace detail
+
 class Json
 {
 public:
-    struct Array
+    class Object
     {
-        Array() = default;
-    };
-
-    struct Object
-    {
+    public:
         Object() = default;
+        Object(json_value_t *node) : node_(node) {} 
+        ~Object() = default;
+    private:
+        json_value_t *node_;
     };
+
+    class Array
+    {
+    public:
+        Array() = default;
+        Array(json_value_t *node) : node_(node) {} 
+        ~Array() = default;
+    private:
+        json_value_t *node_;
+    };
+
 public: 
-    // Constructors for the various types of JSON value.
-    Json() : val_(nullptr) {}
-    Json(const std::string& str) : val_(str) {}
-    Json(const char* str) : val_(str) {}
-    Json(std::nullptr_t null) : val_(null) {}
-    Json(double val) : val_(val) {}
-    Json(int val) : val_(val) {}
-    Json(bool val) : val_(val) {}
-    Json(const Array& val) : val_(json_value_create(JSON_VALUE_ARRAY), true) {}
-    Json(const Object& val) : val_(json_value_create(JSON_VALUE_OBJECT), true) {}
-    ~Json() = default;
-
-    Json(const Json& json) = delete;
-    Json& operator=(const Json& json) = delete;
-    Json(Json&& other);
-    Json& operator=(Json&& other);
-
     static Json parse(const std::string &str);
     static Json parse(const std::ifstream& stream);
     
     const std::string dump() const;
     const std::string dump(int spaces) const;
 
-public:
-    int type() const
+    Json operator[](const std::string& key);
+
+    Json operator[](int index);
+
+    template <typename T>
+    void operator=(const T& val)
     {
-        return val_.type();
+        this->push_back(key_, val);
     }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, bool>::value, T>::type
+    get() const
+    {
+        return json_value_type(root_) == JSON_VALUE_TRUE ? true : false;
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_arithmetic<T>::value && 
+                            !std::is_same<T, bool>::value &&
+                            !detail::is_char<T>::value, T>::type
+    get() const
+    {
+        return static_cast<T>(json_value_number(root_));
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, Object>::value, T>::type
+    get() const
+    {
+        return Object(root_);
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, Array>::value, T>::type
+    get() const
+    {
+        return Array(root_);
+    }
+
+    template <typename T>
+    typename std::enable_if<detail::is_string<T>::value, T>::type
+    get() const
+    {
+        return std::string(json_value_string(root_));
+    }
+
+    template <typename T>
+    typename std::enable_if<std::is_same<T, std::nullptr_t>::value, T>::type
+    get() const
+    {
+        return nullptr;
+    }
+
+    template <typename T>
+    operator T() 
+    {
+        return get<T>();
+    }
+
+public:
+    int type() const { return json_value_type(root_); }
 
     bool is_null() const
     {
@@ -90,105 +163,84 @@ public:
 
     int size() const;
 
-    bool empty() const
-    {
-        return val_.empty();
-    }
+	bool empty() const;
 
-    void clear()
-    {
-        val_.to_object();
-    }
+    void clear();
 
-    template <typename T> bool is() const;
-    // template <typename T> T &get();
 public:
-    // object
-    Json& operator[](const std::string& key);
-    
-    template <typename T>
-    Json& operator=(const T& val)
-    {
-        Json* json = this->parent_;
-        assert(json->type() == JSON_VALUE_OBJECT);
-        json->push_back(json->key_, val);
-        return *this;
-    }
+	void push_back(const std::string& key, int val);    
+	void push_back(const std::string& key, double val);
+    void push_back(const std::string& key, bool val);
+    void push_back(const std::string& key, const std::string& val);
+    void push_back(const std::string& key, const char* val);
+    void push_back(const std::string& key, std::nullptr_t val);
 
-    template <typename T>
-    void push_back(const std::string& key, const T& val)
-    {
-        val_.push_back(key, val);
-    }
-
-    template <typename T>
-    void push_back(const T& val)
-    {
-        val_.push_back(val);
-    }
-
-    // todo : template<typename T>
-    bool has(const std::string& key) const
-    {
-        if (!is_object())
-        {
-            return false;
-        }
-        const auto it = object_.find(key);
-        if(it != object_.end())
-        {
-            return true;
-        }
-        json_object_t* obj = json_value_object(val_.json());
-        const json_value_t* val = json_object_find(key.c_str(), obj);
-        return val == nullptr ? false : true;
-    }
+	void push_back(int val);
+	void push_back(double val);
+    void push_back(bool val);
+    void push_back(const std::string& val);
+    void push_back(const char* val);
+    void push_back(std::nullptr_t val);
 
 private:
-    Json create_incomplete_json();
+    bool can_obj_push_back();
+
+    bool can_arr_push_back();
+
+	void to_object();
+
+    void to_array();
+
+private:
+    // for parse
+    static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
+
+    static void string_convert(const char *raw_str, std::string* out_str);
+
+    static void number_convert(double number, std::string* out_str);
+
+    static void array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str);
+
+    static void array_convert_not_format(const json_array_t *arr, std::string* out_str);
+
+    static void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
+
+    static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
 
     friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
-private:
-    Json(JsonValue &&val) : val_(std::move(val)) {}
+public:
+    // Constructors for the various types of JSON value.
+    Json();
+    Json(const std::string& str);
+    Json(const char* str);
+    Json(std::nullptr_t null);
+    Json(double val);
+    Json(int val);
+    Json(bool val);
+    Json(const Array& val);
+    Json(const Object& val);
 
-    Json(const json_value_t* val) : val_(val) {}
+    ~Json();
+
+    Json(const Json& json) = delete;
+    Json& operator=(const Json& json) = delete;
+    Json(Json&& other);
+    Json& operator=(Json&& other);
 
 private:
-    std::map<std::string, Json> object_;
+    struct Empty {};
+    // watcher
+    Json(const json_value_t *val, std::string&& key);
+    Json(const json_value_t *val, const std::string& key);
+    Json(const json_value_t *val);
+    Json(const Empty&);
+
+    bool is_valid() { return root_ != nullptr; }
+private:
+    json_value_t *root_ = nullptr;
+    bool allocate_ = false;
     std::string key_;
-    Json* parent_ = nullptr;  // watcher
-    JsonValue val_;
 };
-
-template <> inline bool Json::is<std::nullptr_t>() const {                                                                               \
-    return is_null();                                                                           \
-}
-
-// todo : optimize 
-// typename std::enable_if<is_arithmetic<T>::value, T>::type
-template <> inline bool Json::is<int>() const {                                                                               \
-    return is_number();                                                                                  \
-}
-
-template <> inline bool Json::is<double>() const {                                                                               \
-    return is_number();                                                                                  \
-}
-
-template <> inline bool Json::is<bool>() const {                                                                               \
-    return is_boolean();                                                   \
-}
-
-template <> inline bool Json::is<Json::Object>() const {                                                                               \
-    return is_object();                                                                                \
-}
-
-template <> inline bool Json::is<Json::Array>() const {                                                                               \
-    return is_array();                                                           \
-}
-
-template <> inline bool Json::is<std::string>() const {                                                                               \
-    return is_string();                                                      \
-}
 
 }  // namespace wfrest
 

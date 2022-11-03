@@ -22,8 +22,15 @@ void test02()
     json empty_array_explicit = json::array();
 }
 
+void test03()
+{
+    auto j = json::parse(R"({"happy": true, "pi": 3.141})");
+    std::cout << j["happy"].get<std::string>();
+}
+
 int main()
 {
-    test01();
+    // test01();
+    test03();
     return 0;
 }
