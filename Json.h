@@ -37,27 +37,38 @@ struct is_char : std::integral_constant<bool, std::is_same<C, char>::value ||
 
 } // namespace detail
 
+
+class Object_S;
+
 class Json
 {
 public:
-    class Object
-    {
-    public:
-        Object() = default;
-        Object(json_value_t *node) : node_(node) {} 
-        ~Object() = default;
-    private:
-        json_value_t *node_;
-    };
+    // todo : object need fix
+    using Object = Object_S;
 
     class Array
     {
     public:
-        Array() = default;
-        Array(json_value_t *node) : node_(node) {} 
-        ~Array() = default;
+        Array() :
+            node_(json_value_create(JSON_VALUE_ARRAY)), 
+            allocate_(true) 
+        {}
+        Array(json_value_t *node) : node_(node) {}
+        Array(json_value_t *node, bool allocate) 
+            : node_(node),
+            allocate_(allocate) 
+        {} 
+        ~Array()
+        {
+            if (allocate_) 
+            {
+                json_value_destroy(node_);
+            }
+        }
+        friend class Json;
     private:
         json_value_t *node_;
+        bool allocate_ = false;
     };
 
 public: 
@@ -69,7 +80,11 @@ public:
 
     Json operator[](const std::string& key);
 
+    Json operator[](const std::string& key) const;
+
     Json operator[](int index);
+    
+    Json operator[](int index) const;
 
     template <typename T>
     void operator=(const T& val)
@@ -174,6 +189,7 @@ public:
     void push_back(const std::string& key, const std::string& val);
     void push_back(const std::string& key, const char* val);
     void push_back(const std::string& key, std::nullptr_t val);
+    void push_back(const std::string& key, const Object& obj);
 
 	void push_back(int val);
 	void push_back(double val);
@@ -181,6 +197,7 @@ public:
     void push_back(const std::string& val);
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
+    void push_back(const Object& obj);
 
 private:
     bool can_obj_push_back();
@@ -227,7 +244,7 @@ public:
     Json(Json&& other);
     Json& operator=(Json&& other);
 
-private:
+protected:
     struct Empty {};
     // watcher
     Json(const json_value_t *val, std::string&& key);
@@ -235,11 +252,20 @@ private:
     Json(const json_value_t *val);
     Json(const Empty&);
 
-    bool is_valid() { return root_ != nullptr; }
+    bool is_valid() const { return root_ != nullptr; }
 private:
     json_value_t *root_ = nullptr;
     bool allocate_ = false;
     std::string key_;
+};
+
+class Object_S : public Json 
+{
+public:
+    Object_S() = default;
+    Object_S(json_value_t *root) 
+        : Json(root)
+    {}
 };
 
 }  // namespace wfrest

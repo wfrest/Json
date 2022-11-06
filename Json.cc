@@ -147,7 +147,43 @@ Json Json::operator[](const std::string& key)
 	return Json(val, key);
 }
 
+Json Json::operator[](const std::string& key) const
+{
+	if (!is_valid() || !is_object()) 
+	{
+		return Json(Empty());
+	}
+	const json_value_t *val = root_;
+	json_object_t *obj = json_value_object(val);
+	const json_value_t *res = json_object_find(key.c_str(), obj);
+	if (res != nullptr)
+	{
+		return Json(res);
+	}
+	return Json(Empty());
+}
+
 Json Json::operator[](int index)
+{
+	// duplicate temporarily
+	if (!this->is_array() || index < 0)
+	{
+		return Json(Empty());
+	}
+	const json_value_t *val;
+	json_array_t *arr = json_value_array(root_);
+	json_array_for_each(val, arr)
+	{
+		if(index == 0)
+		{
+			return Json(val);
+		}
+		index--;
+	}
+	return Json(Empty());
+}
+
+Json Json::operator[](int index) const
 {
 	if (!this->is_array() || index < 0)
 	{
@@ -165,6 +201,7 @@ Json Json::operator[](int index)
 	}
 	return Json(Empty());
 }
+
 
 bool Json::can_obj_push_back()
 {
@@ -218,6 +255,16 @@ void Json::push_back(const std::string& key, const std::string& val)
 	}
 	json_object_t* obj = json_value_object(root_);
 	json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val.c_str());
+}
+
+void Json::push_back(const std::string& key, const Object& val)
+{
+	if(!can_obj_push_back())
+	{
+		return;
+	}
+	json_object_t* obj = json_value_object(root_);
+	json_object_append(obj, key.c_str(), 0, val.root_);
 }
 
 void Json::push_back(const std::string& key, const char* val)
@@ -312,6 +359,16 @@ void Json::push_back(std::nullptr_t val)
 	}
 	json_array_t* arr = json_value_array(root_);
 	json_array_append(arr, JSON_VALUE_NULL);
+}
+
+void Json::push_back(const Object& val)
+{
+	if(!can_arr_push_back())
+	{
+		return;
+	}
+	json_array_t* arr = json_value_array(root_);
+	json_array_append(arr, 0, val.root_);
 }
 
 int Json::size() const

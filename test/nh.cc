@@ -28,9 +28,23 @@ void test03()
     std::cout << j["happy"].get<std::string>();
 }
 
+void test04()
+{
+    auto j = json::parse(R"(["123", true, [123, false, "test"]])");
+    // std::cout << j.dump() << std::endl;  // ["123",true,[123,false,"test"]]
+    std::cout << j[0] << std::endl;  // "123"
+    std::cout << j[2] << std::endl;  // [123,false,"test"]
+    std::cout << j[2][0] << std::endl;  // 123
+    j[2][0] = "111";
+    std::cout << j[2][0] << std::endl;  // "111"
+    std::cout << j[2][4] << std::endl;  // null
+    std::cout << j[2].size() << std::endl;
+}
+
 int main()
 {
     // test01();
-    test03();
+    // test03();
+    test04();
     return 0;
 }
