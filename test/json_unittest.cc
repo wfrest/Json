@@ -13,12 +13,13 @@ TEST(JsonTest, one_level) {
   Json data;
   EXPECT_TRUE(data.is_null());
   Json data_tmp = data["test"];
-  EXPECT_TRUE(data_tmp.is_object());
-  // data["test"] = 1.0;
-  // EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
-  // EXPECT_EQ(data.dump(), R"({"test":1})");
+  EXPECT_TRUE(data_tmp.is_null());
+  data["test"] = 1.0;
+  EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
+  EXPECT_TRUE(data.is_object());
+  EXPECT_EQ(data.dump(), R"({"test":1})");
 }
-/*
+
 TEST(JsonTest, one_level_multi) {
   Json data;
   data["test"] = 1.0;
@@ -157,7 +158,7 @@ TEST(JsonTest, const_operator) {
   EXPECT_EQ(js["test1"].get<bool>(), false);
   EXPECT_EQ(js["test3"].get<std::string>(), "string");
 }
-*/
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

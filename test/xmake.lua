@@ -16,3 +16,8 @@ target("json_unittest")
     add_files("json_unittest.cc")
     add_deps("Json")
     add_packages("gtest")
+
+target("test1")
+    add_files("test1.cc")
+
+

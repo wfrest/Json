@@ -1,500 +1,561 @@
 #include "Json.h"
 #include "json_parser.h"
 
-namespace wfrest {
+namespace wfrest
+{
 
-Json::Json() : node_(json_value_create(JSON_VALUE_NULL)) {}
+Json::Json() : node_(json_value_create(JSON_VALUE_NULL))
+{
+}
 
-Json::Json(const std::string &str) : node_(json_value_parse(str.c_str())) {}
+Json::Json(const std::string& str) : node_(json_value_parse(str.c_str()))
+{
+}
 
-Json::Json(const char *str) : node_(json_value_parse(str)) {}
+Json::Json(const char* str) : node_(json_value_parse(str))
+{
+}
 
-Json::Json(std::nullptr_t null) : node_(json_value_create(JSON_VALUE_NULL)) {}
+Json::Json(std::nullptr_t null) : node_(json_value_create(JSON_VALUE_NULL))
+{
+}
 
-Json::Json(double val) : node_(json_value_create(JSON_VALUE_NUMBER, val)) {}
+Json::Json(double val) : node_(json_value_create(JSON_VALUE_NUMBER, val))
+{
+}
 
 Json::Json(int val)
-    : node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val))) {}
+    : node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val)))
+{
+}
 
 Json::Json(bool val)
     : node_(val ? json_value_create(JSON_VALUE_TRUE)
-                : json_value_create(JSON_VALUE_FALSE)) {}
-
-Json::Json(const Array &val) : node_(json_value_create(JSON_VALUE_ARRAY)) {}
-
-Json::Json(const Object &val) : node_(json_value_create(JSON_VALUE_OBJECT)) {}
-
-Json::~Json() {
-  // root node controls life cycle
-  if (is_root()) {
-    json_value_destroy(node_);
-  }
+                : json_value_create(JSON_VALUE_FALSE))
+{
 }
 
-Json::Json(const json_value_t *parent, std::string &&key)
-    : node_(nullptr), parent_(parent), parent_key_(std::move(key)) {}
-
-Json::Json(const json_value_t *parent, const std::string &key)
-    : node_(nullptr), parent_(parent), parent_key_(key) {}
-
-Json::Json(const json_value_t *parent) : node_(nullptr), parent_(parent) {}
-
-Json::Json(const Empty &) : node_(nullptr) {}
-
-Json::Json(Json &&other) {
-  node_ = other.node_;
-  other.node_ = nullptr;
-  parent_ = other.parent_;
-  other.parent_ = nullptr;
+Json::Json(const Array& val) : node_(json_value_create(JSON_VALUE_ARRAY))
+{
 }
 
-Json &Json::operator=(Json &&other) {
-  if (this == &other) {
+Json::Json(const Object& val) : node_(json_value_create(JSON_VALUE_OBJECT))
+{
+}
+
+Json::~Json()
+{
+    // root node controls life cycle
+    if (is_root())
+    {
+        destroy_node(node_);
+    }
+}
+
+Json::Json(const json_value_t* parent, std::string&& key)
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
+      parent_key_(std::move(key))
+{
+}
+
+Json::Json(const json_value_t* parent, const std::string& key)
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
+      parent_key_(key)
+{
+}
+
+Json::Json(const json_value_t* parent)
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent)
+{
+}
+
+Json::Json(const Empty&) : node_(nullptr)
+{
+}
+
+Json::Json(Json&& other)
+{
+    node_ = other.node_;
+    other.node_ = nullptr;
+    parent_ = other.parent_;
+    other.parent_ = nullptr;
+}
+
+Json& Json::operator=(Json&& other)
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+    node_ = other.node_;
+    other.node_ = nullptr;
+    parent_ = other.parent_;
+    other.parent_ = nullptr;
     return *this;
-  }
-  node_ = other.node_;
-  other.node_ = nullptr;
-  parent_ = other.parent_;
-  other.parent_ = nullptr;
-  return *this;
 }
 
-Json Json::parse(const std::string &str) { return Json(str); }
-
-Json Json::parse(const std::ifstream &stream) {
-  std::stringstream buffer;
-  buffer << stream.rdbuf();
-  return Json(buffer.str());
+Json Json::parse(const std::string& str)
+{
+    return Json(str);
 }
 
-const std::string Json::dump() const { return dump(0); }
-
-const std::string Json::dump(int spaces) const {
-  std::string str;
-  str.reserve(64);
-  value_convert(node_, spaces, 0, &str);
-  return str;
+Json Json::parse(const std::ifstream& stream)
+{
+    std::stringstream buffer;
+    buffer << stream.rdbuf();
+    return Json(buffer.str());
 }
 
-Json Json::operator[](const std::string &key) {
-  if (!is_valid() || !is_null() || !is_object()) {
-    return Json(Empty());
-  }
-  if (is_null()) {
-    this->to_object();
-  }
-  const json_value_t *val = node_;
-  // if exists
-  json_object_t *obj = json_value_object(val);
-  const json_value_t *res = json_object_find(key.c_str(), obj);
-  if (res != nullptr) {
-    return Json(res);
-  }
-  if (!is_root()) {
-    json_object_t *parent_obj = json_value_object(parent_);
-    // todo : remove const_cast
-    node_ = const_cast<json_value_t *>(
-        json_object_append(parent_obj, parent_key_.c_str(), JSON_VALUE_OBJECT));
-  }
-  return Json(node_, key);
+const std::string Json::dump() const
+{
+    return dump(0);
 }
 
-Json Json::operator[](const std::string &key) const {
-  if (!is_valid() || !is_object()) {
-    return Json(Empty());
-  }
-  const json_value_t *val = node_;
-  json_object_t *obj = json_value_object(val);
-  const json_value_t *res = json_object_find(key.c_str(), obj);
-  if (res != nullptr) {
-    return Json(res);
-  }
-  return Json(Empty());
+const std::string Json::dump(int spaces) const
+{
+    std::string str;
+    str.reserve(64);
+    value_convert(node_, spaces, 0, &str);
+    return str;
 }
 
-Json Json::operator[](int index) {
-  // duplicate temporarily
-  if (!this->is_array() || index < 0) {
-    return Json(Empty());
-  }
-  const json_value_t *val;
-  json_array_t *arr = json_value_array(node_);
-  json_array_for_each(val, arr) {
-    if (index == 0) {
-      return Json(val);
+Json Json::operator[](const std::string& key)
+{
+    if (!is_valid() && !is_null() && !is_object())
+    {
+        return Json(Empty());
     }
-    index--;
-  }
-  return Json(Empty());
-}
-
-Json Json::operator[](int index) const {
-  if (!this->is_array() || index < 0) {
-    return Json(Empty());
-  }
-  const json_value_t *val;
-  json_array_t *arr = json_value_array(node_);
-  json_array_for_each(val, arr) {
-    if (index == 0) {
-      return Json(val);
+    if (is_null() && is_root())
+    {
+        this->to_object();
     }
-    index--;
-  }
-  return Json(Empty());
+    else if (is_object())
+    {
+        // if exists
+        json_object_t* obj = json_value_object(node_);
+        const json_value_t* res = json_object_find(key.c_str(), obj);
+        if (res != nullptr)
+        {
+            return Json(res);
+        }
+    }
+    if (is_placeholder())
+    {
+        destroy_node(node_);
+        json_object_t* parent_obj = json_value_object(parent_);
+        node_ = json_object_append(parent_obj, parent_key_.c_str(),
+                                   JSON_VALUE_OBJECT);
+    }
+    return Json(node_, key);
 }
 
-bool Json::can_obj_push_back() {
-  if (is_incomplete()) {
+Json Json::operator[](const std::string& key) const
+{
+    if (!is_valid() || !is_object())
+    {
+        return Json(Empty());
+    }
+    const json_value_t* val = node_;
+    json_object_t* obj = json_value_object(val);
+    const json_value_t* res = json_object_find(key.c_str(), obj);
+    if (res != nullptr)
+    {
+        return Json(res);
+    }
+    return Json(Empty());
+}
+
+Json Json::operator[](int index)
+{
+    // duplicate temporarily
+    if (!this->is_array() || index < 0)
+    {
+        return Json(Empty());
+    }
+    const json_value_t* val;
+    json_array_t* arr = json_value_array(node_);
+    json_array_for_each(val, arr)
+    {
+        if (index == 0)
+        {
+            return Json(val);
+        }
+        index--;
+    }
+    return Json(Empty());
+}
+
+Json Json::operator[](int index) const
+{
+    if (!this->is_array() || index < 0)
+    {
+        return Json(Empty());
+    }
+    const json_value_t* val;
+    json_array_t* arr = json_value_array(node_);
+    json_array_for_each(val, arr)
+    {
+        if (index == 0)
+        {
+            return Json(val);
+        }
+        index--;
+    }
+    return Json(Empty());
+}
+
+bool Json::can_obj_push_back()
+{
+    if (is_placeholder())
+    {
+        return true;
+    }
+    if (is_root() && is_null())
+    {
+        this->to_object();
+    }
+    return is_object();
+}
+
+bool Json::can_arr_push_back()
+{
+    if (this->type() == JSON_VALUE_NULL)
+    {
+        this->to_array();
+    }
+    else if (this->type() != JSON_VALUE_ARRAY)
+    {
+        return false;
+    }
     return true;
-  }
-  if (is_root() && is_null()) {
-    this->to_object();
-  }
-  return is_object();
 }
 
-void Json::push_back(const std::string &key, int val) {
-  this->push_back(key, static_cast<double>(val));
+void Json::push_back(int val)
+{
+    this->push_back(static_cast<double>(val));
 }
 
-void Json::push_back(const std::string &key, double val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = nullptr;
-  if (is_incomplete()) {
-    obj = json_value_object(parent_);
-  } else {
-    obj = json_value_object(node_);
-  }
-  // todo : remove const_cast
-  node_ = const_cast<json_value_t *>(
-      json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER, val));
-}
-
-void Json::push_back(const std::string &key, bool val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = json_value_object(node_);
-  if (val) {
-    json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
-  } else {
-    json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
-  }
-}
-
-void Json::push_back(const std::string &key, const std::string &val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = json_value_object(node_);
-  json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val.c_str());
-}
-
-void Json::push_back(const std::string &key, const Object &val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = json_value_object(node_);
-  json_object_append(obj, key.c_str(), 0, val.node_);
-}
-
-void Json::push_back(const std::string &key, const char *val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = json_value_object(node_);
-  json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
-}
-
-void Json::push_back(const std::string &key, std::nullptr_t val) {
-  if (!can_obj_push_back()) {
-    return;
-  }
-  json_object_t *obj = json_value_object(node_);
-  json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
-}
-
-bool Json::can_arr_push_back() {
-  if (this->type() == JSON_VALUE_NULL) {
-    this->to_array();
-  } else if (this->type() != JSON_VALUE_ARRAY) {
-    return false;
-  }
-  return true;
-}
-
-void Json::push_back(int val) { this->push_back(static_cast<double>(val)); }
-
-void Json::push_back(double val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  json_array_append(arr, JSON_VALUE_NUMBER, val);
-}
-
-void Json::push_back(bool val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  if (val) {
-    json_array_append(arr, JSON_VALUE_TRUE);
-  } else {
-    json_array_append(arr, JSON_VALUE_FALSE);
-  }
-}
-
-void Json::push_back(const std::string &val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  json_array_append(arr, JSON_VALUE_STRING, val.c_str());
-}
-
-void Json::push_back(const char *val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  json_array_append(arr, JSON_VALUE_STRING, val);
-}
-
-void Json::push_back(std::nullptr_t val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  json_array_append(arr, JSON_VALUE_NULL);
-}
-
-void Json::push_back(const Object &val) {
-  if (!can_arr_push_back()) {
-    return;
-  }
-  json_array_t *arr = json_value_array(node_);
-  json_array_append(arr, 0, val.node_);
-}
-
-int Json::size() const {
-  if (type() == JSON_VALUE_ARRAY) {
-    json_array_t *array = json_value_array(node_);
-    return json_array_size(array);
-  } else if (type() == JSON_VALUE_OBJECT) {
-    json_object_t *obj = json_value_object(node_);
-    return json_object_size(obj);
-  }
-  return 1;
-}
-
-bool Json::empty() const {
-  switch (type()) {
-  case JSON_VALUE_NULL: {
-    // null values are empty
-    return true;
-  }
-  case JSON_VALUE_ARRAY:
-  case JSON_VALUE_OBJECT: {
-    return size() == 0;
-  }
-  default:
-    // all other types are nonempty
-    return false;
-  }
-}
-
-void Json::clear() {
-  if (is_root()) {
-    json_value_destroy(node_);
-    node_ = json_value_create(JSON_VALUE_OBJECT);
-  }
-}
-
-void Json::to_object() {
-  if (is_root() && is_null()) {
-    json_value_destroy(node_);
-    node_ = json_value_create(JSON_VALUE_OBJECT);
-  }
-}
-
-void Json::to_array() {
-  if (is_root() && is_null()) {
-    json_value_destroy(node_);
-    node_ = json_value_create(JSON_VALUE_ARRAY);
-  }
-}
-
-void Json::value_convert(const json_value_t *val, int spaces, int depth,
-                         std::string *out_str) {
-  if (val == nullptr || out_str == nullptr)
-    return;
-  switch (json_value_type(val)) {
-  case JSON_VALUE_STRING:
-    string_convert(json_value_string(val), out_str);
-    break;
-  case JSON_VALUE_NUMBER:
-    number_convert(json_value_number(val), out_str);
-    break;
-  case JSON_VALUE_OBJECT:
-    object_convert(json_value_object(val), spaces, depth, out_str);
-    break;
-  case JSON_VALUE_ARRAY:
-    array_convert(json_value_array(val), spaces, depth, out_str);
-    break;
-  case JSON_VALUE_TRUE:
-    out_str->append("true");
-    break;
-  case JSON_VALUE_FALSE:
-    out_str->append("false");
-    break;
-  case JSON_VALUE_NULL:
-    out_str->append("null");
-    break;
-  }
-}
-
-void Json::string_convert(const char *str, std::string *out_str) {
-  out_str->append("\"");
-  while (*str) {
-    switch (*str) {
-    case '\r':
-      out_str->append("\\r");
-      break;
-    case '\n':
-      out_str->append("\\n");
-      break;
-    case '\f':
-      out_str->append("\\f");
-      break;
-    case '\b':
-      out_str->append("\\b");
-      break;
-    case '\"':
-      out_str->append("\\\"");
-      break;
-    case '\t':
-      out_str->append("\\t");
-      break;
-    case '\\':
-      out_str->append("\\\\");
-      break;
-    default:
-      out_str->push_back(*str);
-      break;
+void Json::push_back(double val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
     }
-    str++;
-  }
-  out_str->append("\"");
+    json_array_t* arr = json_value_array(node_);
+    json_array_append(arr, JSON_VALUE_NUMBER, val);
 }
 
-void Json::number_convert(double number, std::string *out_str) {
-  std::ostringstream oss;
-  long long integer = number;
-  if (integer == number)
-    oss << integer;
-  else
-    oss << number;
-
-  out_str->append(oss.str());
+void Json::push_back(bool val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
+    }
+    json_array_t* arr = json_value_array(node_);
+    if (val)
+    {
+        json_array_append(arr, JSON_VALUE_TRUE);
+    }
+    else
+    {
+        json_array_append(arr, JSON_VALUE_FALSE);
+    }
 }
 
-void Json::array_convert_not_format(const json_array_t *arr,
-                                    std::string *out_str) {
-  const json_value_t *val;
-  int n = 0;
-
-  out_str->append("[");
-  json_array_for_each(val, arr) {
-    if (n != 0) {
-      out_str->append(",");
+void Json::push_back(const std::string& val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
     }
-    n++;
-    value_convert(val, 0, 0, out_str);
-  }
-  out_str->append("]");
+    json_array_t* arr = json_value_array(node_);
+    json_array_append(arr, JSON_VALUE_STRING, val.c_str());
 }
 
-void Json::array_convert(const json_array_t *arr, int spaces, int depth,
-                         std::string *out_str) {
-  if (spaces == 0) {
-    return array_convert_not_format(arr, out_str);
-  }
-  const json_value_t *val;
-  int n = 0;
-  int i;
-  std::string padding(spaces, ' ');
-  out_str->append("[\n");
-  json_array_for_each(val, arr) {
-    if (n != 0) {
-      out_str->append(",\n");
+void Json::push_back(const char* val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
     }
-    n++;
-    for (i = 0; i < depth + 1; i++) {
-      out_str->append(padding);
-    }
-    value_convert(val, spaces, depth + 1, out_str);
-  }
-
-  out_str->append("\n");
-  for (i = 0; i < depth; i++) {
-    out_str->append(padding);
-  }
-  out_str->append("]");
+    json_array_t* arr = json_value_array(node_);
+    json_array_append(arr, JSON_VALUE_STRING, val);
 }
 
-void Json::object_convert_not_format(const json_object_t *obj,
-                                     std::string *out_str) {
-  const char *name;
-  const json_value_t *val;
-  int n = 0;
-
-  out_str->append("{");
-  json_object_for_each(name, val, obj) {
-    if (n != 0) {
-      out_str->append(",");
+void Json::push_back(std::nullptr_t val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
     }
-    n++;
+    json_array_t* arr = json_value_array(node_);
+    json_array_append(arr, JSON_VALUE_NULL);
+}
+
+void Json::push_back(const Object& val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
+    }
+    json_array_t* arr = json_value_array(node_);
+    json_array_append(arr, 0, val.node_);
+}
+
+int Json::size() const
+{
+    if (type() == JSON_VALUE_ARRAY)
+    {
+        json_array_t* array = json_value_array(node_);
+        return json_array_size(array);
+    }
+    else if (type() == JSON_VALUE_OBJECT)
+    {
+        json_object_t* obj = json_value_object(node_);
+        return json_object_size(obj);
+    }
+    return 1;
+}
+
+bool Json::empty() const
+{
+    switch (type())
+    {
+        case JSON_VALUE_NULL:
+        {
+            // null values are empty
+            return true;
+        }
+        case JSON_VALUE_ARRAY:
+        case JSON_VALUE_OBJECT:
+        {
+            return size() == 0;
+        }
+        default:
+            // all other types are nonempty
+            return false;
+    }
+}
+
+void Json::clear()
+{
+    if (is_root())
+    {
+        destroy_node(node_);
+        node_ = json_value_create(JSON_VALUE_OBJECT);
+    }
+}
+
+void Json::to_object()
+{
+    if (is_root() && is_null())
+    {
+        destroy_node(node_);
+        node_ = json_value_create(JSON_VALUE_OBJECT);
+    }
+}
+
+void Json::to_array()
+{
+    if (is_root() && is_null())
+    {
+        destroy_node(node_);
+        node_ = json_value_create(JSON_VALUE_ARRAY);
+    }
+}
+
+void Json::value_convert(const json_value_t* val, int spaces, int depth,
+                         std::string* out_str)
+{
+    if (val == nullptr || out_str == nullptr)
+        return;
+    switch (json_value_type(val))
+    {
+        case JSON_VALUE_STRING:
+            string_convert(json_value_string(val), out_str);
+            break;
+        case JSON_VALUE_NUMBER:
+            number_convert(json_value_number(val), out_str);
+            break;
+        case JSON_VALUE_OBJECT:
+            object_convert(json_value_object(val), spaces, depth, out_str);
+            break;
+        case JSON_VALUE_ARRAY:
+            array_convert(json_value_array(val), spaces, depth, out_str);
+            break;
+        case JSON_VALUE_TRUE:
+            out_str->append("true");
+            break;
+        case JSON_VALUE_FALSE:
+            out_str->append("false");
+            break;
+        case JSON_VALUE_NULL:
+            out_str->append("null");
+            break;
+    }
+}
+
+void Json::string_convert(const char* str, std::string* out_str)
+{
     out_str->append("\"");
-    out_str->append(name);
-    out_str->append("\":");
-    value_convert(val, 0, 0, out_str);
-  }
-  out_str->append("}");
-}
-
-void Json::object_convert(const json_object_t *obj, int spaces, int depth,
-                          std::string *out_str) {
-  if (spaces == 0) {
-    return object_convert_not_format(obj, out_str);
-  }
-  const char *name;
-  const json_value_t *val;
-  int n = 0;
-  int i;
-  std::string padding(spaces, ' ');
-  out_str->append("{\n");
-  json_object_for_each(name, val, obj) {
-    if (n != 0) {
-      out_str->append(",\n");
-    }
-    n++;
-    for (i = 0; i < depth + 1; i++) {
-      out_str->append(padding);
+    while (*str)
+    {
+        switch (*str)
+        {
+            case '\r':
+                out_str->append("\\r");
+                break;
+            case '\n':
+                out_str->append("\\n");
+                break;
+            case '\f':
+                out_str->append("\\f");
+                break;
+            case '\b':
+                out_str->append("\\b");
+                break;
+            case '\"':
+                out_str->append("\\\"");
+                break;
+            case '\t':
+                out_str->append("\\t");
+                break;
+            case '\\':
+                out_str->append("\\\\");
+                break;
+            default:
+                out_str->push_back(*str);
+                break;
+        }
+        str++;
     }
     out_str->append("\"");
-    out_str->append(name);
-    out_str->append("\": ");
-    value_convert(val, spaces, depth + 1, out_str);
-  }
+}
 
-  out_str->append("\n");
-  for (i = 0; i < depth; i++) {
-    out_str->append(padding);
-  }
-  out_str->append("}");
+void Json::number_convert(double number, std::string* out_str)
+{
+    std::ostringstream oss;
+    long long integer = number;
+    if (integer == number)
+        oss << integer;
+    else
+        oss << number;
+
+    out_str->append(oss.str());
+}
+
+void Json::array_convert_not_format(const json_array_t* arr,
+                                    std::string* out_str)
+{
+    const json_value_t* val;
+    int n = 0;
+
+    out_str->append("[");
+    json_array_for_each(val, arr)
+    {
+        if (n != 0)
+        {
+            out_str->append(",");
+        }
+        n++;
+        value_convert(val, 0, 0, out_str);
+    }
+    out_str->append("]");
+}
+
+void Json::array_convert(const json_array_t* arr, int spaces, int depth,
+                         std::string* out_str)
+{
+    if (spaces == 0)
+    {
+        return array_convert_not_format(arr, out_str);
+    }
+    const json_value_t* val;
+    int n = 0;
+    int i;
+    std::string padding(spaces, ' ');
+    out_str->append("[\n");
+    json_array_for_each(val, arr)
+    {
+        if (n != 0)
+        {
+            out_str->append(",\n");
+        }
+        n++;
+        for (i = 0; i < depth + 1; i++)
+        {
+            out_str->append(padding);
+        }
+        value_convert(val, spaces, depth + 1, out_str);
+    }
+
+    out_str->append("\n");
+    for (i = 0; i < depth; i++)
+    {
+        out_str->append(padding);
+    }
+    out_str->append("]");
+}
+
+void Json::object_convert_not_format(const json_object_t* obj,
+                                     std::string* out_str)
+{
+    const char* name;
+    const json_value_t* val;
+    int n = 0;
+
+    out_str->append("{");
+    json_object_for_each(name, val, obj)
+    {
+        if (n != 0)
+        {
+            out_str->append(",");
+        }
+        n++;
+        out_str->append("\"");
+        out_str->append(name);
+        out_str->append("\":");
+        value_convert(val, 0, 0, out_str);
+    }
+    out_str->append("}");
+}
+
+void Json::object_convert(const json_object_t* obj, int spaces, int depth,
+                          std::string* out_str)
+{
+    if (spaces == 0)
+    {
+        return object_convert_not_format(obj, out_str);
+    }
+    const char* name;
+    const json_value_t* val;
+    int n = 0;
+    int i;
+    std::string padding(spaces, ' ');
+    out_str->append("{\n");
+    json_object_for_each(name, val, obj)
+    {
+        if (n != 0)
+        {
+            out_str->append(",\n");
+        }
+        n++;
+        for (i = 0; i < depth + 1; i++)
+        {
+            out_str->append(padding);
+        }
+        out_str->append("\"");
+        out_str->append(name);
+        out_str->append("\": ");
+        value_convert(val, spaces, depth + 1, out_str);
+    }
+
+    out_str->append("\n");
+    for (i = 0; i < depth; i++)
+    {
+        out_str->append(padding);
+    }
+    out_str->append("}");
 }
 
 } // namespace wfrest
