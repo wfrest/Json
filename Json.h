@@ -162,6 +162,8 @@ public:
 
     void clear();
 
+    Json copy() const;
+
 public:
     // for object
     template <typename T>
@@ -309,12 +311,6 @@ private:
         {
             json_value_destroy(const_cast<json_value_t*>(node));
         }
-    }
-
-    Json copy() const
-    {
-        // todo : need to optimize
-        return Json(dump());
     }
 
 private:
