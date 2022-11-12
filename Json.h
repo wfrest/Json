@@ -146,21 +146,17 @@ public:
         }
         if (is_placeholder())
         {
-            placeholder_push_back(key, val);
+            // placeholder_push_back(key, val);
         }
         else
         {
             // normal_push_back(key, val);
         }
     }
-
-    template <typename T, typename std::enable_if<
-                              !detail::is_number<T>::value>::type = true>
-    void placeholder_push_back(const std::string& key, T val);
-
-    template <typename T,
-              typename std::enable_if<detail::is_number<T>::value>::type = true>
-    void placeholder_push_back(const std::string& key, T val)
+    /*
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val)
     {
         json_object_t* obj = json_value_object(parent_);
         destroy_node(node_);
@@ -168,6 +164,48 @@ public:
                                    static_cast<double>(val));
     }
 
+    template <typename T, typename std::enable_if<std::is_same<T, bool>::value,
+                                                  bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        if (val)
+        {
+            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
+        }
+        else
+        {
+            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
+        }
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, std::nullptr_t>::value,
+                                      bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+    }
+
+    template <typename T, typename std::enable_if<detail::is_string<T>::value,
+                                                  bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_STRING,
+                                   val.c_str());
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Object>::value ||
+                                          std::is_same<T, Array>::value,
+                                      bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val);
+    */
     // for array
     void push_back(int val);
     void push_back(double val);
@@ -323,56 +361,19 @@ std::nullptr_t Json::get<std::nullptr_t>() const
     return nullptr;
 }
 
-template <>
-void Json::placeholder_push_back<bool>(const std::string& key, bool val)
-{
-    json_object_t* obj = json_value_object(parent_);
-    destroy_node(node_);
-    if (val)
-    {
-        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
-    }
-    else
-    {
-        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
-    }
-}
-
-template <>
-void Json::placeholder_push_back<std::nullptr_t>(const std::string& key,
-                                                 std::nullptr_t val)
-{
-    json_object_t* obj = json_value_object(parent_);
-    destroy_node(node_);
-    node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
-}
-
-template <>
-void Json::placeholder_push_back<std::string>(const std::string& key,
-                                              const std::string& val)
-{
-    json_object_t* obj = json_value_object(parent_);
-    destroy_node(node_);
-    node_ =
-        json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val.c_str());
-}
-
-template <>
-void Json::placeholder_push_back<Json::Object>(const std::string& key,
-                                               const Json::Object& val)
+/*
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      std::is_same<T, Json::Array>::value,
+                                  bool>::type>
+void Json::placeholder_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(parent_);
     destroy_node(node_);
     node_ = json_object_append(obj, key.c_str(), 0, val.node_);
 }
-template <>
-void Json::placeholder_push_back<Json::Array>(const std::string& key,
-                                              const Json::Array& val)
-{
-    json_object_t* obj = json_value_object(parent_);
-    destroy_node(node_);
-    node_ = json_object_append(obj, key.c_str(), 0, val.node_);
-}
+
+*/
 
 } // namespace wfrest
 

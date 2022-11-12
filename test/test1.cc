@@ -20,6 +20,14 @@ bool Test::get<bool>() const
     std::cout << "222" << std::endl;
     return false;
 }
+
+template <>
+std::string Test::get<std::string>() const
+{
+    std::cout << "3333" << std::endl;
+    return "1111";
+}
+
 int main()
 {
     Test t;

@@ -20,4 +20,7 @@ target("json_unittest")
 target("test1")
     add_files("test1.cc")
 
+target("test2")
+    add_files("test2.cc")
+
 
