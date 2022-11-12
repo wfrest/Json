@@ -231,22 +231,17 @@ json_value_t* json_value_copy(const json_value_t* val)
 {
     switch (json_value_type(val))
     {
-        case JSON_VALUE_OBJECT:
-            return json_value_copy_object(val);
-        case JSON_VALUE_ARRAY:
-            return json_value_copy_array(val);
         case JSON_VALUE_STRING:
             return json_value_create(JSON_VALUE_STRING, json_value_string(val));
         case JSON_VALUE_NUMBER:
             return json_value_create(JSON_VALUE_NUMBER, json_value_number(val));
-        case JSON_VALUE_TRUE:
-            return json_value_create(JSON_VALUE_TRUE);
-        case JSON_VALUE_FALSE:
-            return json_value_create(JSON_VALUE_FALSE);
-        case JSON_VALUE_NULL:
-            return json_value_create(JSON_VALUE_NULL);
+        case JSON_VALUE_OBJECT:
+            return json_value_copy_object(val);
+        case JSON_VALUE_ARRAY:
+            return json_value_copy_array(val);
+        default:
+            return json_value_create(json_value_type(val));
     }
-    return nullptr;
 }
 
 void test08()

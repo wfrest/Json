@@ -162,6 +162,8 @@ public:
 
     void clear();
 
+    Json copy() const;
+
 public:
     // for object
     template <typename T>
@@ -191,43 +193,16 @@ public:
                                    static_cast<double>(val));
     }
 
-    void placeholder_push_back(const std::string& key, bool val)
-    {
-        json_object_t* obj = json_value_object(parent_);
-        destroy_node(node_);
-        if (val)
-        {
-            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
-        }
-        else
-        {
-            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
-        }
-    }
-
-    void placeholder_push_back(const std::string& key, std::nullptr_t val)
-    {
-        json_object_t* obj = json_value_object(parent_);
-        destroy_node(node_);
-        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
-    }
-
-    void placeholder_push_back(const std::string& key, const std::string& val)
-    {
-        placeholder_push_back(key, val.c_str());
-    }
-
-    void placeholder_push_back(const std::string& key, const char* val)
-    {
-        json_object_t* obj = json_value_object(parent_);
-        destroy_node(node_);
-        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
-    }
     template <typename T,
               typename std::enable_if<std::is_same<T, Object>::value ||
                                           std::is_same<T, Array>::value,
                                       bool>::type = true>
     void placeholder_push_back(const std::string& key, const T& val);
+
+    void placeholder_push_back(const std::string& key, bool val);
+    void placeholder_push_back(const std::string& key, std::nullptr_t val);
+    void placeholder_push_back(const std::string& key, const std::string& val);
+    void placeholder_push_back(const std::string& key, const char* val);
 
     template <typename T, typename std::enable_if<detail::is_number<T>::value,
                                                   bool>::type = true>
@@ -238,50 +213,40 @@ public:
                            static_cast<double>(val));
     }
 
-    void normal_push_back(const std::string& key, bool val)
-    {
-        json_object_t* obj = json_value_object(node_);
-        if (val)
-        {
-            json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
-        }
-        else
-        {
-            json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
-        }
-    }
-
-    void normal_push_back(const std::string& key, std::nullptr_t val)
-    {
-        json_object_t* obj = json_value_object(node_);
-        json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
-    }
-
-    void normal_push_back(const std::string& key, const std::string& val)
-    {
-        normal_push_back(key, val.c_str());
-    }
-
-    void normal_push_back(const std::string& key, const char* val)
-    {
-        json_object_t* obj = json_value_object(node_);
-        json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
-    }
-
     template <typename T,
               typename std::enable_if<std::is_same<T, Object>::value ||
                                           std::is_same<T, Array>::value,
                                       bool>::type = true>
     void normal_push_back(const std::string& key, const T& val);
 
+    void normal_push_back(const std::string& key, bool val);
+    void normal_push_back(const std::string& key, std::nullptr_t val);
+    void normal_push_back(const std::string& key, const std::string& val);
+    void normal_push_back(const std::string& key, const char* val);
+
     // for array
-    void push_back(int val);
-    void push_back(double val);
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
+    void push_back(T val)
+    {
+        if (!can_arr_push_back())
+        {
+            return;
+        }
+        json_array_t* arr = json_value_array(node_);
+        json_array_append(arr, JSON_VALUE_NUMBER, static_cast<double>(val));
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                          std::is_same<T, Json::Array>::value,
+                                      bool>::type = true>
+    void push_back(const T& val);
+
     void push_back(bool val);
     void push_back(const std::string& val);
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
-    void push_back(const Object& obj);
 
 private:
     bool can_obj_push_back();
@@ -309,12 +274,6 @@ private:
         {
             json_value_destroy(const_cast<json_value_t*>(node));
         }
-    }
-
-    Json copy() const
-    {
-        // todo : need to optimize
-        return Json(dump());
     }
 
 private:
@@ -452,6 +411,21 @@ void Json::normal_push_back(const std::string& key, const T& val)
     copy_json.node_ = nullptr;
 }
 
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      ::std::is_same<T, Json::Array>::value,
+                                  bool>::type = true>
+void Json::push_back(const T& val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
+    }
+    json_array_t* arr = json_value_array(node_);
+    Json copy_json = val.copy();
+    json_array_append(arr, 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+}
 } // namespace wfrest
 
 #endif // WFREST_JSON_H_

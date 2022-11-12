@@ -4,6 +4,53 @@
 namespace wfrest
 {
 
+namespace
+{
+
+json_value_t* json_value_copy(const json_value_t* val);
+
+json_value_t* json_value_copy_object(const json_value_t* val)
+{
+    json_value_t* dest_val = json_value_create(JSON_VALUE_OBJECT);
+    json_object_t* dest_obj = json_value_object(dest_val);
+    json_object_t* obj = json_value_object(val);
+    const char* name;
+
+    json_object_for_each(name, val, obj)
+        json_object_append(dest_obj, name, 0, json_value_copy(val));
+
+    return dest_val;
+}
+
+json_value_t* json_value_copy_array(const json_value_t* val)
+{
+    json_value_t* dest_val = json_value_create(JSON_VALUE_ARRAY);
+    json_array_t* dest_arr = json_value_array(dest_val);
+    json_array_t* arr = json_value_array(val);
+    json_array_for_each(val, arr)
+        json_array_append(dest_arr, 0, json_value_copy(val));
+    return dest_val;
+}
+
+json_value_t* json_value_copy(const json_value_t* val)
+{
+    switch (json_value_type(val))
+    {
+        case JSON_VALUE_STRING:
+            return json_value_create(JSON_VALUE_STRING, json_value_string(val));
+        case JSON_VALUE_NUMBER:
+            return json_value_create(JSON_VALUE_NUMBER, json_value_number(val));
+        case JSON_VALUE_OBJECT:
+            return json_value_copy_object(val);
+        case JSON_VALUE_ARRAY:
+            return json_value_copy_array(val);
+        default:
+            return json_value_create(json_value_type(val));
+    }
+}
+
+} // namespace
+
 Json::Json() : node_(json_value_create(JSON_VALUE_NULL))
 {
 }
@@ -238,6 +285,67 @@ bool Json::can_obj_push_back()
     }
     return is_object();
 }
+void Json::placeholder_push_back(const std::string& key, bool val)
+{
+    json_object_t* obj = json_value_object(parent_);
+    destroy_node(node_);
+    if (val)
+    {
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
+    }
+    else
+    {
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
+    }
+}
+
+void Json::placeholder_push_back(const std::string& key, std::nullptr_t val)
+{
+    json_object_t* obj = json_value_object(parent_);
+    destroy_node(node_);
+    node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+}
+
+void Json::placeholder_push_back(const std::string& key, const std::string& val)
+{
+    placeholder_push_back(key, val.c_str());
+}
+
+void Json::placeholder_push_back(const std::string& key, const char* val)
+{
+    json_object_t* obj = json_value_object(parent_);
+    destroy_node(node_);
+    node_ = json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
+}
+void Json::normal_push_back(const std::string& key, bool val)
+{
+    json_object_t* obj = json_value_object(node_);
+    if (val)
+    {
+        json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
+    }
+    else
+    {
+        json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
+    }
+}
+
+void Json::normal_push_back(const std::string& key, std::nullptr_t val)
+{
+    json_object_t* obj = json_value_object(node_);
+    json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+}
+
+void Json::normal_push_back(const std::string& key, const std::string& val)
+{
+    normal_push_back(key, val.c_str());
+}
+
+void Json::normal_push_back(const std::string& key, const char* val)
+{
+    json_object_t* obj = json_value_object(node_);
+    json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
+}
 
 bool Json::can_arr_push_back()
 {
@@ -248,19 +356,9 @@ bool Json::can_arr_push_back()
     return is_array();
 }
 
-void Json::push_back(int val)
+Json Json::copy() const
 {
-    this->push_back(static_cast<double>(val));
-}
-
-void Json::push_back(double val)
-{
-    if (!can_arr_push_back())
-    {
-        return;
-    }
-    json_array_t* arr = json_value_array(node_);
-    json_array_append(arr, JSON_VALUE_NUMBER, val);
+    return Json(json_value_copy(node_), nullptr);
 }
 
 void Json::push_back(bool val)
@@ -308,18 +406,6 @@ void Json::push_back(std::nullptr_t val)
     }
     json_array_t* arr = json_value_array(node_);
     json_array_append(arr, JSON_VALUE_NULL);
-}
-
-void Json::push_back(const Object& val)
-{
-    if (!can_arr_push_back())
-    {
-        return;
-    }
-    json_array_t* arr = json_value_array(node_);
-    Json copy_json = val.copy();
-    json_array_append(arr, 0, copy_json.node_);
-    copy_json.node_ = nullptr;
 }
 
 std::string Json::type_str() const
