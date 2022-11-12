@@ -77,6 +77,8 @@ public:
         this->push_back(parent_key_, val);
     }
 
+    bool has(const std::string& key) const;
+
     template <typename T>
     typename std::enable_if<std::is_same<T, bool>::value, T>::type get() const
     {
@@ -120,6 +122,8 @@ public:
     {
         return json_value_type(node_);
     }
+
+    std::string type_str() const;
 
     bool is_null() const
     {
@@ -294,12 +298,23 @@ private:
         return is_null() && parent_ != nullptr;
     }
 
+    bool is_incomplete() const
+    {
+        return node_ == nullptr;
+    }
+
     void destroy_node(const json_value_t* node)
     {
         if (node != nullptr)
         {
             json_value_destroy(const_cast<json_value_t*>(node));
         }
+    }
+
+    Json copy() const
+    {
+        // todo : need to optimize
+        return Json(dump());
     }
 
 private:
@@ -380,7 +395,8 @@ public:
     Object_S() : Json(*this)
     {
     }
-    Object_S(const json_value_t* root) : Json(root)
+    Object_S(const json_value_t* node, const json_value_t* parent)
+        : Json(node, parent)
     {
     }
 };
@@ -391,7 +407,8 @@ public:
     Array_S() : Json(*this)
     {
     }
-    Array_S(const json_value_t* root) : Json(root)
+    Array_S(const json_value_t* node, const json_value_t* parent)
+        : Json(node, parent)
     {
     }
 };
@@ -400,14 +417,14 @@ template <typename T>
 typename std::enable_if<std::is_same<T, Json::Object>::value, T>::type
 Json::get() const
 {
-    return Json::Object(node_);
+    return Json::Object(node_, parent_);
 }
 
 template <typename T>
 typename std::enable_if<std::is_same<T, Json::Array>::value, T>::type
 Json::get() const
 {
-    return Json::Array(node_);
+    return Json::Array(node_, parent_);
 }
 
 template <typename T,
@@ -418,7 +435,9 @@ void Json::placeholder_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(parent_);
     destroy_node(node_);
-    node_ = json_object_append(obj, key.c_str(), 0, val.node_);
+    Json copy_json = val.copy();
+    node_ = json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    copy_json.node_ = nullptr;
 }
 
 template <typename T,
@@ -428,7 +447,9 @@ template <typename T,
 void Json::normal_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(node_);
-    json_object_append(obj, key.c_str(), 0, val.node_);
+    Json copy_json = val.copy();
+    json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    copy_json.node_ = nullptr;
 }
 
 } // namespace wfrest

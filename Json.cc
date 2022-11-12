@@ -126,12 +126,13 @@ const std::string Json::dump(int spaces) const
 
 Json Json::operator[](const std::string& key)
 {
-    if (!is_valid() && !is_null() && !is_object())
+    if (!is_valid())
     {
         return Json(Empty());
     }
     if (is_null() && is_root())
     {
+        // todo : need is_root here?
         this->to_object();
     }
     else if (is_object())
@@ -151,6 +152,11 @@ Json Json::operator[](const std::string& key)
         node_ = json_object_append(parent_obj, parent_key_.c_str(),
                                    JSON_VALUE_OBJECT);
     }
+    if (!is_object())
+    {
+        return Json(Empty());
+    }
+
     return Json(node_, key);
 }
 
@@ -168,6 +174,13 @@ Json Json::operator[](const std::string& key) const
         return Json(res, node_);
     }
     return Json(Empty());
+}
+
+bool Json::has(const std::string& key) const
+{
+    json_object_t* obj = json_value_object(node_);
+    const json_value_t* res = json_object_find(key.c_str(), obj);
+    return res != nullptr;
 }
 
 Json Json::operator[](int index)
@@ -211,6 +224,10 @@ Json Json::operator[](int index) const
 
 bool Json::can_obj_push_back()
 {
+    if (is_incomplete())
+    {
+        return false;
+    }
     if (is_placeholder())
     {
         return true;
@@ -224,15 +241,11 @@ bool Json::can_obj_push_back()
 
 bool Json::can_arr_push_back()
 {
-    if (this->type() == JSON_VALUE_NULL)
+    if (is_root() && is_null())
     {
-        this->to_array();
+        to_array();
     }
-    else if (this->type() != JSON_VALUE_ARRAY)
-    {
-        return false;
-    }
-    return true;
+    return is_array();
 }
 
 void Json::push_back(int val)
@@ -304,7 +317,31 @@ void Json::push_back(const Object& val)
         return;
     }
     json_array_t* arr = json_value_array(node_);
-    json_array_append(arr, 0, val.node_);
+    Json copy_json = val.copy();
+    json_array_append(arr, 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+}
+
+std::string Json::type_str() const
+{
+    switch (type())
+    {
+        case JSON_VALUE_STRING:
+            return "string";
+        case JSON_VALUE_NUMBER:
+            return "number";
+        case JSON_VALUE_OBJECT:
+            return "object";
+        case JSON_VALUE_ARRAY:
+            return "array";
+        case JSON_VALUE_TRUE:
+            return "true";
+        case JSON_VALUE_FALSE:
+            return "false";
+        case JSON_VALUE_NULL:
+            return "null";
+    }
+    return "unknown";
 }
 
 int Json::size() const
