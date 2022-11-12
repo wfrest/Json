@@ -352,9 +352,10 @@ protected:
     {
     };
     // watcher
-    Json(const json_value_t* val, std::string&& key);
-    Json(const json_value_t* val, const std::string& key);
-    Json(const json_value_t* val);
+    Json(const json_value_t* parent, std::string&& key);
+    Json(const json_value_t* parent, const std::string& key);
+    Json(const json_value_t* parent);
+    Json(const json_value_t* node, const json_value_t* parent);
     Json(const Empty&);
 
     bool is_valid() const

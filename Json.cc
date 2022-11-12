@@ -69,6 +69,11 @@ Json::Json(const json_value_t* parent)
 {
 }
 
+Json::Json(const json_value_t* node, const json_value_t* parent)
+    : node_(node), parent_(parent)
+{
+}
+
 Json::Json(const Empty&) : node_(nullptr)
 {
 }
@@ -136,7 +141,7 @@ Json Json::operator[](const std::string& key)
         const json_value_t* res = json_object_find(key.c_str(), obj);
         if (res != nullptr)
         {
-            return Json(res);
+            return Json(res, node_);
         }
     }
     if (is_placeholder())
@@ -160,7 +165,7 @@ Json Json::operator[](const std::string& key) const
     const json_value_t* res = json_object_find(key.c_str(), obj);
     if (res != nullptr)
     {
-        return Json(res);
+        return Json(res, node_);
     }
     return Json(Empty());
 }
@@ -178,7 +183,7 @@ Json Json::operator[](int index)
     {
         if (index == 0)
         {
-            return Json(val);
+            return Json(val, node_);
         }
         index--;
     }
@@ -197,7 +202,7 @@ Json Json::operator[](int index) const
     {
         if (index == 0)
         {
-            return Json(val);
+            return Json(val, node_);
         }
         index--;
     }
