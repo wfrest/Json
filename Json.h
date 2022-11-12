@@ -1,15 +1,15 @@
 #ifndef WFREST_JSON_H_
 #define WFREST_JSON_H_
 
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <functional>
-#include <map>
-#include <cassert>
 #include "json_parser.h"
+#include <cassert>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace wfrest
 {
@@ -29,90 +29,78 @@ struct is_string<std::basic_string<T, Traits, Alloc>>
     static constexpr bool value = true;
 };
 
-template<typename C> 
-struct is_char : std::integral_constant<bool, std::is_same<C, char>::value ||
-                                              std::is_same<C, char16_t>::value ||
-                                              std::is_same<C, char32_t>::value ||
-                                              std::is_same<C, wchar_t>::value>  {};
+template <typename C>
+struct is_char
+    : std::integral_constant<bool, std::is_same<C, char>::value ||
+                                       std::is_same<C, char16_t>::value ||
+                                       std::is_same<C, char32_t>::value ||
+                                       std::is_same<C, wchar_t>::value>
+{
+};
+
+template <typename T>
+struct is_number
+    : std::integral_constant<bool, std::is_arithmetic<T>::value &&
+                                       !std::is_same<T, bool>::value &&
+                                       !detail::is_char<T>::value>
+{
+};
 
 } // namespace detail
 
+class Object_S;
+class Array_S;
 class Json
 {
 public:
-    class Object
-    {
-    public:
-        Object() = default;
-        Object(json_value_t *node) : node_(node) {} 
-        ~Object() = default;
-    private:
-        json_value_t *node_;
-    };
+    using Object = Object_S;
+    using Array = Array_S;
 
-    class Array
-    {
-    public:
-        Array() = default;
-        Array(json_value_t *node) : node_(node) {} 
-        ~Array() = default;
-    private:
-        json_value_t *node_;
-    };
-
-public: 
-    static Json parse(const std::string &str);
+public:
+    static Json parse(const std::string& str);
     static Json parse(const std::ifstream& stream);
-    
+
     const std::string dump() const;
     const std::string dump(int spaces) const;
 
     Json operator[](const std::string& key);
 
+    Json operator[](const std::string& key) const;
+
     Json operator[](int index);
+
+    Json operator[](int index) const;
 
     template <typename T>
     void operator=(const T& val)
     {
-        this->push_back(key_, val);
+        this->push_back(parent_key_, val);
     }
 
     template <typename T>
-    typename std::enable_if<std::is_same<T, bool>::value, T>::type
-    get() const
+    typename std::enable_if<std::is_same<T, bool>::value, T>::type get() const
     {
-        return json_value_type(root_) == JSON_VALUE_TRUE ? true : false;
+        return json_value_type(node_) == JSON_VALUE_TRUE ? true : false;
     }
 
     template <typename T>
-    typename std::enable_if<std::is_arithmetic<T>::value && 
-                            !std::is_same<T, bool>::value &&
-                            !detail::is_char<T>::value, T>::type
-    get() const
+    typename std::enable_if<detail::is_number<T>::value, T>::type get() const
     {
-        return static_cast<T>(json_value_number(root_));
+        return static_cast<T>(json_value_number(node_));
+    }
+
+    template <typename T>
+    typename std::enable_if<detail::is_string<T>::value, T>::type get() const
+    {
+        return std::string(json_value_string(node_));
     }
 
     template <typename T>
     typename std::enable_if<std::is_same<T, Object>::value, T>::type
-    get() const
-    {
-        return Object(root_);
-    }
+    get() const;
 
     template <typename T>
-    typename std::enable_if<std::is_same<T, Array>::value, T>::type
-    get() const
-    {
-        return Array(root_);
-    }
-
-    template <typename T>
-    typename std::enable_if<detail::is_string<T>::value, T>::type
-    get() const
-    {
-        return std::string(json_value_string(root_));
-    }
+    typename std::enable_if<std::is_same<T, Array>::value, T>::type get() const;
 
     template <typename T>
     typename std::enable_if<std::is_same<T, std::nullptr_t>::value, T>::type
@@ -122,13 +110,16 @@ public:
     }
 
     template <typename T>
-    operator T() 
+    operator T()
     {
         return get<T>();
     }
 
 public:
-    int type() const { return json_value_type(root_); }
+    int type() const
+    {
+        return json_value_type(node_);
+    }
 
     bool is_null() const
     {
@@ -163,51 +154,180 @@ public:
 
     int size() const;
 
-	bool empty() const;
+    bool empty() const;
 
     void clear();
 
 public:
-	void push_back(const std::string& key, int val);    
-	void push_back(const std::string& key, double val);
-    void push_back(const std::string& key, bool val);
-    void push_back(const std::string& key, const std::string& val);
-    void push_back(const std::string& key, const char* val);
-    void push_back(const std::string& key, std::nullptr_t val);
+    // for object
+    template <typename T>
+    void push_back(const std::string& key, const T& val)
+    {
+        if (!can_obj_push_back())
+        {
+            return;
+        }
+        if (is_placeholder())
+        {
+            placeholder_push_back(key, val);
+        }
+        else
+        {
+            normal_push_back(key, val);
+        }
+    }
 
-	void push_back(int val);
-	void push_back(double val);
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
+                                   static_cast<double>(val));
+    }
+
+    void placeholder_push_back(const std::string& key, bool val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        if (val)
+        {
+            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
+        }
+        else
+        {
+            node_ = json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
+        }
+    }
+
+    void placeholder_push_back(const std::string& key, std::nullptr_t val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+    }
+
+    void placeholder_push_back(const std::string& key, const std::string& val)
+    {
+        placeholder_push_back(key, val.c_str());
+    }
+
+    void placeholder_push_back(const std::string& key, const char* val)
+    {
+        json_object_t* obj = json_value_object(parent_);
+        destroy_node(node_);
+        node_ = json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
+    }
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Object>::value ||
+                                          std::is_same<T, Array>::value,
+                                      bool>::type = true>
+    void placeholder_push_back(const std::string& key, const T& val);
+
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
+    void normal_push_back(const std::string& key, const T& val)
+    {
+        json_object_t* obj = json_value_object(node_);
+        json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
+                           static_cast<double>(val));
+    }
+
+    void normal_push_back(const std::string& key, bool val)
+    {
+        json_object_t* obj = json_value_object(node_);
+        if (val)
+        {
+            json_object_append(obj, key.c_str(), JSON_VALUE_TRUE);
+        }
+        else
+        {
+            json_object_append(obj, key.c_str(), JSON_VALUE_FALSE);
+        }
+    }
+
+    void normal_push_back(const std::string& key, std::nullptr_t val)
+    {
+        json_object_t* obj = json_value_object(node_);
+        json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+    }
+
+    void normal_push_back(const std::string& key, const std::string& val)
+    {
+        normal_push_back(key, val.c_str());
+    }
+
+    void normal_push_back(const std::string& key, const char* val)
+    {
+        json_object_t* obj = json_value_object(node_);
+        json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Object>::value ||
+                                          std::is_same<T, Array>::value,
+                                      bool>::type = true>
+    void normal_push_back(const std::string& key, const T& val);
+
+    // for array
+    void push_back(int val);
+    void push_back(double val);
     void push_back(bool val);
     void push_back(const std::string& val);
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
+    void push_back(const Object& obj);
 
 private:
     bool can_obj_push_back();
 
     bool can_arr_push_back();
 
-	void to_object();
+    void to_object();
 
     void to_array();
 
+    // can convert to any type, just like a placeholder
+    bool is_placeholder() const
+    {
+        return is_null() && parent_ != nullptr;
+    }
+
+    void destroy_node(const json_value_t* node)
+    {
+        if (node != nullptr)
+        {
+            json_value_destroy(const_cast<json_value_t*>(node));
+        }
+    }
+
 private:
     // for parse
-    static void value_convert(const json_value_t *val, int spaces, int depth, std::string* out_str);
+    static void value_convert(const json_value_t* val, int spaces, int depth,
+                              std::string* out_str);
 
-    static void string_convert(const char *raw_str, std::string* out_str);
+    static void string_convert(const char* raw_str, std::string* out_str);
 
     static void number_convert(double number, std::string* out_str);
 
-    static void array_convert(const json_array_t *arr, int spaces, int depth, std::string* out_str);
+    static void array_convert(const json_array_t* arr, int spaces, int depth,
+                              std::string* out_str);
 
-    static void array_convert_not_format(const json_array_t *arr, std::string* out_str);
+    static void array_convert_not_format(const json_array_t* arr,
+                                         std::string* out_str);
 
-    static void object_convert(const json_object_t *obj, int spaces, int depth, std::string* out_str);
+    static void object_convert(const json_object_t* obj, int spaces, int depth,
+                               std::string* out_str);
 
-    static void object_convert_not_format(const json_object_t *obj, std::string* out_str);
+    static void object_convert_not_format(const json_object_t* obj,
+                                          std::string* out_str);
 
-    friend inline std::ostream& operator << (std::ostream& os, const Json& json) { return (os << json.dump()); }
+    friend inline std::ostream& operator<<(std::ostream& os, const Json& json)
+    {
+        return (os << json.dump());
+    }
+
 public:
     // Constructors for the various types of JSON value.
     Json();
@@ -227,21 +347,90 @@ public:
     Json(Json&& other);
     Json& operator=(Json&& other);
 
-private:
-    struct Empty {};
+protected:
+    struct Empty
+    {
+    };
     // watcher
-    Json(const json_value_t *val, std::string&& key);
-    Json(const json_value_t *val, const std::string& key);
-    Json(const json_value_t *val);
+    Json(const json_value_t* parent, std::string&& key);
+    Json(const json_value_t* parent, const std::string& key);
+    Json(const json_value_t* parent);
+    Json(const json_value_t* node, const json_value_t* parent);
     Json(const Empty&);
 
-    bool is_valid() { return root_ != nullptr; }
+    bool is_valid() const
+    {
+        return node_ != nullptr;
+    }
+
+    bool is_root() const
+    {
+        return parent_ == nullptr;
+    }
+
 private:
-    json_value_t *root_ = nullptr;
-    bool allocate_ = false;
-    std::string key_;
+    const json_value_t* node_ = nullptr;
+    const json_value_t* parent_ = nullptr;
+    std::string parent_key_;
 };
 
-}  // namespace wfrest
+class Object_S : public Json
+{
+public:
+    Object_S() : Json(*this)
+    {
+    }
+    Object_S(const json_value_t* root) : Json(root)
+    {
+    }
+};
 
-#endif  // WFREST_JSON_H_
+class Array_S : public Json
+{
+public:
+    Array_S() : Json(*this)
+    {
+    }
+    Array_S(const json_value_t* root) : Json(root)
+    {
+    }
+};
+
+template <typename T>
+typename std::enable_if<std::is_same<T, Json::Object>::value, T>::type
+Json::get() const
+{
+    return Json::Object(node_);
+}
+
+template <typename T>
+typename std::enable_if<std::is_same<T, Json::Array>::value, T>::type
+Json::get() const
+{
+    return Json::Array(node_);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      std::is_same<T, Json::Array>::value,
+                                  bool>::type = true>
+void Json::placeholder_push_back(const std::string& key, const T& val)
+{
+    json_object_t* obj = json_value_object(parent_);
+    destroy_node(node_);
+    node_ = json_object_append(obj, key.c_str(), 0, val.node_);
+}
+
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      std::is_same<T, Json::Array>::value,
+                                  bool>::type = true>
+void Json::normal_push_back(const std::string& key, const T& val)
+{
+    json_object_t* obj = json_value_object(node_);
+    json_object_append(obj, key.c_str(), 0, val.node_);
+}
+
+} // namespace wfrest
+
+#endif // WFREST_JSON_H_
