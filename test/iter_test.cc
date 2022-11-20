@@ -26,10 +26,30 @@ TEST(IterTest, object)
     ++it;
     ++it; // safe to ++ forever, always stay at end() position
     EXPECT_EQ(it, data.end());
-    for (Json::iterator it = data.begin(); it != data.end(); it++)
-    {
-        std::cout << it.key() << it.value() << std::endl;
-    }
+    // for (Json::iterator it = data.begin(); it != data.end(); it++)
+    // {
+    //     std::cout << it.key() << it.value() << std::endl;
+    // }
+}
+
+TEST(IterTest, Array)
+{
+    Json data;
+    data.push_back(1);
+    data.push_back(2.0);
+    data.push_back(false);
+    Json::iterator it = data.begin();
+    EXPECT_EQ(it.value().get<int>(), 1);
+    EXPECT_EQ((*it).get<int>(), 1);
+    ++it;
+    EXPECT_EQ(it.value().get<double>(), 2.0);
+    EXPECT_EQ((*it).get<double>(), 2.0);
+    it++;
+    EXPECT_EQ(it.value().get<bool>(), false);
+    EXPECT_EQ((*it).get<bool>(), false);
+    ++it;
+    it++;
+    EXPECT_EQ(it, data.end());
 }
 
 int main(int argc, char** argv)

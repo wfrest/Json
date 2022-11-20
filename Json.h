@@ -329,6 +329,11 @@ public:
                 name_ = json_object_next_name(name_, obj);
                 cursor_ = json_object_next_value(cursor_, obj);
             }
+            else if (json_value_type(val_) == JSON_VALUE_ARRAY)
+            {
+                json_array_t* arr = json_value_array(val_);
+                cursor_ = json_array_next_value(cursor_, arr);
+            }
         }
 
     private:
