@@ -12,13 +12,18 @@ target("nh")
     set_kind("binary")
     add_files("nh.cc")
 
-target("json_unittest")
-    add_files("json_unittest.cc")
-    add_deps("Json")
-    add_packages("gtest")
-
-target("json_obj_test")
-    add_files("json_obj_test.cc")
+-- target("json_unittest")
+--     add_files("json_unittest.cc")
+--     add_deps("Json")
+--     add_packages("gtest")
+--
+-- target("json_obj_test")
+--     add_files("json_obj_test.cc")
+--     add_deps("Json")
+--     add_packages("gtest")
+--
+target("iter_test")
+    add_files("iter_test.cc")
     add_deps("Json")
     add_packages("gtest")
 

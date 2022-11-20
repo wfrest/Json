@@ -164,6 +164,16 @@ public:
 
     Json copy() const;
 
+    std::string key() const
+    {
+        return parent_key_;
+    }
+
+    const Json& value() const
+    {
+        return *this;
+    }
+
 public:
     // for object
     template <typename T>
@@ -248,6 +258,122 @@ public:
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
 
+public:
+    class iterator
+    {
+    public:
+        friend class Json;
+        explicit iterator(const json_value_t* val) : val_(val)
+        {
+        }
+
+        Json operator*() const
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                return Json(cursor_, val_, std::string(name_));
+            }
+            return Json(cursor_, val_);
+        }
+
+        iterator& operator++()
+        {
+            if (is_end())
+            {
+                return *this;
+            }
+            forward();
+            return *this;
+        }
+
+        iterator operator++(int)
+        {
+            iterator old = (*this);
+            if (!is_end())
+            {
+                ++(*this);
+            }
+            return old;
+        }
+
+        bool operator==(const iterator& other) const
+        {
+            return cursor_ == other.cursor_;
+        }
+
+        bool operator!=(iterator const& other) const
+        {
+            return !(*this == other);
+        }
+
+        std::string key() const
+        {
+            return name_ == nullptr ? "" : name_;
+        }
+
+        Json value() const
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                return Json(cursor_, val_, std::string(name_));
+            }
+            return Json(cursor_, val_);
+        }
+
+    private:
+        void set_begin()
+        {
+            cursor_ = nullptr;
+            name_ = nullptr;
+            forward();
+        }
+
+        void set_end()
+        {
+            cursor_ = nullptr;
+            name_ = nullptr;
+        }
+
+        bool is_end()
+        {
+            return cursor_ == nullptr && name_ == nullptr;
+        }
+
+        void forward()
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                json_object_t* obj = json_value_object(val_);
+                name_ = json_object_next_name(name_, obj);
+                cursor_ = json_object_next_value(cursor_, obj);
+            }
+            else if (json_value_type(val_) == JSON_VALUE_ARRAY)
+            {
+                json_array_t* arr = json_value_array(val_);
+                cursor_ = json_array_next_value(cursor_, arr);
+            }
+        }
+
+    private:
+        const json_value_t* val_ = nullptr;
+        const char* name_ = nullptr;
+        const json_value_t* cursor_ = nullptr;
+    };
+
+    iterator begin()
+    {
+        iterator iter(node_);
+        iter.set_begin();
+        return iter;
+    }
+
+    iterator end()
+    {
+        iterator iter(node_);
+        iter.set_end();
+        return iter;
+    }
+
 private:
     bool can_obj_push_back();
 
@@ -330,6 +456,8 @@ protected:
     Json(const json_value_t* parent, const std::string& key);
     Json(const json_value_t* parent);
     Json(const json_value_t* node, const json_value_t* parent);
+    Json(const json_value_t* node, const json_value_t* parent,
+         std::string&& key);
     Json(const Empty&);
 
     bool is_valid() const
