@@ -252,36 +252,39 @@ public:
     class iterator
     {
     public:
-        explicit iterator(const json_value_t* val, const json_value_t* parent)
-            : val_(val), parent_(parent)
+        friend class Json;
+        explicit iterator(const json_value_t* val) : val_(val)
         {
         }
 
         Json operator*() const
         {
-            return Json(val_, parent_);
+            return Json(cursor_, val_);
         }
 
         iterator& operator++()
         {
-            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            if (is_end())
             {
-                json_object_t* obj = json_value_object(val_);
-                cursor_ = json_object_next_value(cursor_, obj);
+                return *this;
             }
+            forward();
             return *this;
         }
 
         iterator operator++(int)
         {
             iterator old = (*this);
-            ++(*this);
+            if (!is_end())
+            {
+                ++(*this);
+            }
             return old;
         }
 
         bool operator==(const iterator& other) const
         {
-            return val_ == other.val_;
+            return cursor_ == other.cursor_;
         }
 
         bool operator!=(iterator const& other) const
@@ -300,20 +303,52 @@ public:
         }
 
     private:
+        void set_begin()
+        {
+            cursor_ = nullptr;
+            name_ = nullptr;
+            forward();
+        }
+
+        void set_end()
+        {
+            cursor_ = nullptr;
+            name_ = nullptr;
+        }
+
+        bool is_end()
+        {
+            return cursor_ == nullptr && name_ == nullptr;
+        }
+
+        void forward()
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                json_object_t* obj = json_value_object(val_);
+                name_ = json_object_next_name(name_, obj);
+                cursor_ = json_object_next_value(cursor_, obj);
+            }
+        }
+
+    private:
+        const json_value_t* val_ = nullptr;
         const char* name_ = nullptr;
         const json_value_t* cursor_ = nullptr;
-        const json_value_t* val_ = nullptr;
-        const json_value_t* parent_ = nullptr;
     };
 
     iterator begin()
     {
-        return iterator(node_, parent_);
+        iterator iter(node_);
+        iter.set_begin();
+        return iter;
     }
 
     iterator end()
     {
-        return iterator(nullptr, nullptr);
+        iterator iter(node_);
+        iter.set_end();
+        return iter;
     }
 
 private:
