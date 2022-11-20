@@ -30,6 +30,10 @@ TEST(IterTest, object)
     // {
     //     std::cout << it.key() << it.value() << std::endl;
     // }
+    for (const auto& it : data)
+    {
+        std::cout << it.key() << " : " << it.value() << std::endl;
+    }
 }
 
 TEST(IterTest, Array)
@@ -50,6 +54,10 @@ TEST(IterTest, Array)
     ++it;
     it++;
     EXPECT_EQ(it, data.end());
+    for (const auto& it : data)
+    {
+        std::cout << it << std::endl;
+    }
 }
 
 int main(int argc, char** argv)

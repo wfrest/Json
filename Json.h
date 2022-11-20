@@ -164,6 +164,16 @@ public:
 
     Json copy() const;
 
+    std::string key() const
+    {
+        return parent_key_;
+    }
+
+    const Json& value() const
+    {
+        return *this;
+    }
+
 public:
     // for object
     template <typename T>
@@ -259,6 +269,10 @@ public:
 
         Json operator*() const
         {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                return Json(cursor_, val_, std::string(name_));
+            }
             return Json(cursor_, val_);
         }
 
@@ -299,6 +313,10 @@ public:
 
         Json value() const
         {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                return Json(cursor_, val_, std::string(name_));
+            }
             return Json(cursor_, val_);
         }
 
@@ -438,6 +456,8 @@ protected:
     Json(const json_value_t* parent, const std::string& key);
     Json(const json_value_t* parent);
     Json(const json_value_t* node, const json_value_t* parent);
+    Json(const json_value_t* node, const json_value_t* parent,
+         std::string&& key);
     Json(const Empty&);
 
     bool is_valid() const

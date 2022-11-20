@@ -120,6 +120,11 @@ Json::Json(const json_value_t* node, const json_value_t* parent)
     : node_(node), parent_(parent)
 {
 }
+Json::Json(const json_value_t* node, const json_value_t* parent,
+           std::string&& key)
+    : node_(node), parent_(parent), parent_key_(std::move(key))
+{
+}
 
 Json::Json(const Empty&) : node_(nullptr)
 {
