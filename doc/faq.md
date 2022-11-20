@@ -19,3 +19,6 @@ https://github.com/xmake-io/xmake/discussions/2090
 
 https://stackoverflow.com/questions/14770252/string-literal-matches-bool-overload-instead-of-stdstring
 
+## range based for c++ 
+
+https://stackoverflow.com/questions/8164567/how-to-make-my-custom-type-to-work-with-range-based-for-loops

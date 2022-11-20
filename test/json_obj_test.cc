@@ -100,8 +100,8 @@ TEST(ObjTest, clear)
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
 }
 
-int main(int argc, char** argv)
-{
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// int main(int argc, char** argv)
+// {
+//     testing::InitGoogleTest(&argc, argv);
+//     return RUN_ALL_TESTS();
+// }

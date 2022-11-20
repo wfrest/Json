@@ -248,6 +248,74 @@ public:
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
 
+public:
+    class iterator
+    {
+    public:
+        explicit iterator(const json_value_t* val, const json_value_t* parent)
+            : val_(val), parent_(parent)
+        {
+        }
+
+        Json operator*() const
+        {
+            return Json(val_, parent_);
+        }
+
+        iterator& operator++()
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                json_object_t* obj = json_value_object(val_);
+                cursor_ = json_object_next_value(cursor_, obj);
+            }
+            return *this;
+        }
+
+        iterator operator++(int)
+        {
+            iterator old = (*this);
+            ++(*this);
+            return old;
+        }
+
+        bool operator==(const iterator& other) const
+        {
+            return val_ == other.val_;
+        }
+
+        bool operator!=(iterator const& other) const
+        {
+            return !(*this == other);
+        }
+
+        std::string key() const
+        {
+            return name_ == nullptr ? "" : name_;
+        }
+
+        Json value() const
+        {
+            return Json(cursor_, val_);
+        }
+
+    private:
+        const char* name_ = nullptr;
+        const json_value_t* cursor_ = nullptr;
+        const json_value_t* val_ = nullptr;
+        const json_value_t* parent_ = nullptr;
+    };
+
+    iterator begin()
+    {
+        return iterator(node_, parent_);
+    }
+
+    iterator end()
+    {
+        return iterator(nullptr, nullptr);
+    }
+
 private:
     bool can_obj_push_back();
 
