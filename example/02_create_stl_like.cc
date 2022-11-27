@@ -40,9 +40,25 @@ void create_by_push_back_object()
     std::cout << data << std::endl;
 }
 
+void create_by_push_back_array()
+{
+    Json data;
+    data.push_back(3.141);
+    data.push_back(true);
+    data.push_back("chanchan");
+    data.push_back(nullptr);
+    Json arr;
+    arr.push_back(42);
+    arr.push_back("answer");
+    data.push_back(arr);
+    std::cout << data << std::endl;
+}
+
 int main()
 {
     create_by_operator();
 
     create_by_push_back_object();
+
+    create_by_push_back_array();
 }

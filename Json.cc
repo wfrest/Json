@@ -431,6 +431,18 @@ void Json::push_back(std::nullptr_t val)
     json_array_append(arr, JSON_VALUE_NULL);
 }
 
+void Json::push_back(const Json& val)
+{
+    if (!can_arr_push_back())
+    {
+        return;
+    }
+    json_array_t* arr = json_value_array(node_);
+    Json copy_json = val.copy();
+    json_array_append(arr, 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+}
+
 std::string Json::type_str() const
 {
     switch (type())

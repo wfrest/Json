@@ -59,20 +59,38 @@ data["answer"]["everything"] = 42;
 Object case:
 
 ```cpp
+Json data;
 
+data.push_back("pi", 3.141);
+data.push_back("happy", true);
+data.push_back("name", "chanchan");
+data.push_back("nothing", nullptr);
+Json answer;
+answer.push_back("everything", 42);
+data.push_back("answer", answer);
 ```
 
 Array Case:
 
 ```cpp
-
+Json data;
+data.push_back(3.141);
+data.push_back(true);
+data.push_back("chanchan");
+data.push_back(nullptr);
+Json arr;
+arr.push_back(42);
+arr.push_back("answer");
+data.push_back(arr);
 ```
-
 
 ### Explict declare Json type 
 
 If you want to be explicit or express the json type is array or object, the functions Json::Array and Json::Object will help:
 
-
+```cpp
+Json::Object obj
+Json::Array arr;
+```
 
 

@@ -259,6 +259,7 @@ public:
     void push_back(const std::string& val);
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
+    void push_back(const Json& val);
 
 public:
     class iterator
