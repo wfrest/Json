@@ -322,6 +322,16 @@ void Json::placeholder_push_back(const std::string& key, const char* val)
     destroy_node(node_);
     node_ = json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
 }
+
+void Json::placeholder_push_back(const std::string& key, const Json& val)
+{
+    json_object_t* obj = json_value_object(parent_);
+    destroy_node(node_);
+    Json copy_json = val.copy();
+    node_ = json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+}
+
 void Json::normal_push_back(const std::string& key, bool val)
 {
     json_object_t* obj = json_value_object(node_);
@@ -350,6 +360,14 @@ void Json::normal_push_back(const std::string& key, const char* val)
 {
     json_object_t* obj = json_value_object(node_);
     json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
+}
+
+void Json::normal_push_back(const std::string& key, const Json& val)
+{
+    json_object_t* obj = json_value_object(node_);
+    Json copy_json = val.copy();
+    json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    copy_json.node_ = nullptr;
 }
 
 bool Json::can_arr_push_back()
