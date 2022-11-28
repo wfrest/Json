@@ -23,4 +23,4 @@ target("Json")
     add_files("*.cc")
 
 add_subdirs('test')
-
+add_subdirs('example')
