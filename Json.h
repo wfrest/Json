@@ -442,7 +442,12 @@ public:
     Json(bool val);
     Json(const Array& val);
     Json(const Object& val);
+    using string_type = typename std::basic_string<char, std::char_traits<char>,
+                                                   std::allocator<char>>;
+    using pair_type = std::pair<string_type, Json>;
 
+    Json(std::initializer_list<pair_type>);
+    Json(std::initializer_list<Object>);
     ~Json();
 
     Json(const Json& json) = delete;

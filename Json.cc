@@ -1,5 +1,6 @@
 #include "Json.h"
 #include "json_parser.h"
+#include <algorithm>
 
 namespace wfrest
 {
@@ -90,6 +91,19 @@ Json::Json(const Object& val) : node_(json_value_create(JSON_VALUE_OBJECT))
 {
 }
 
+Json::Json(std::initializer_list<pair_type> list)
+{
+    std::for_each(list.begin(), list.end(),
+                  [this](const pair_type& pair)
+                  { this->push_back(pair.first, pair.second); });
+}
+
+// Json::Json(std::initializer_list<Object> list)
+// {
+//     std::for_each(list.begin(), list.end(),
+//                   [this](const Json& js) { this->push_back(js); });
+// }
+
 Json::~Json()
 {
     // root node controls life cycle
@@ -136,6 +150,7 @@ Json::Json(Json&& other)
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
+    parent_key_ = std::move(other.parent_key_);
 }
 
 Json& Json::operator=(Json&& other)
@@ -148,6 +163,7 @@ Json& Json::operator=(Json&& other)
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
+    parent_key_ = std::move(other.parent_key_);
     return *this;
 }
 
