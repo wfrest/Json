@@ -91,12 +91,12 @@ Json::Json(const Object& val) : node_(json_value_create(JSON_VALUE_OBJECT))
 {
 }
 
-Json::Json(std::initializer_list<pair_type> list)
-{
-    std::for_each(list.begin(), list.end(),
-                  [this](const pair_type& pair)
-                  { this->push_back(pair.first, pair.second); });
-}
+// Json::Json(std::initializer_list<pair_type> list)
+// {
+//     std::for_each(list.begin(), list.end(),
+//                   [this](const pair_type& pair)
+//                   { this->push_back(pair.first, pair.second); });
+// }
 
 // Json::Json(std::initializer_list<Object> list)
 // {

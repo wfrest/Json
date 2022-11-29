@@ -100,10 +100,11 @@ TEST(JsonTest, const_operator)
     EXPECT_EQ(js["test3"].get<std::string>(), "string");
 }
 
-// TEST(JsonTest, create)
-// {
-//     Json data = {"123", 1};
-// }
+TEST(JsonTest, create)
+{
+    Json data = {{"test", 1}};
+    Json data1 = {{"123", {"test", 1}}};
+}
 
 int main(int argc, char** argv)
 {

@@ -2,6 +2,7 @@
 #define WFREST_JSON_H_
 
 #include "json_parser.h"
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <functional>
@@ -50,6 +51,7 @@ struct is_number
 
 class Object_S;
 class Array_S;
+
 class Json
 {
 public:
@@ -442,12 +444,23 @@ public:
     Json(bool val);
     Json(const Array& val);
     Json(const Object& val);
+
     using string_type = typename std::basic_string<char, std::char_traits<char>,
                                                    std::allocator<char>>;
     using pair_type = std::pair<string_type, Json>;
 
-    Json(std::initializer_list<pair_type>);
-    Json(std::initializer_list<Object>);
+    Json(std::initializer_list<pair_type> list)
+    {
+        std::for_each(list.begin(), list.end(),
+                      [this](const pair_type& pair)
+                      { this->push_back(pair.first, pair.second); });
+    }
+
+    // Json(std::initializer_list<Json> list)
+    // {
+    //     std::for_each(list.begin(), list.end(),
+    //                   [](const Json& js) { std::cout << js << std::endl; });
+    // }
     ~Json();
 
     Json(const Json& json) = delete;
