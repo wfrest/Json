@@ -192,6 +192,21 @@ Json Json::parse(const std::ifstream& stream)
     return Json(buffer.str(), true);
 }
 
+Json Json::parse(FILE* fp)
+{
+    if (fp == nullptr)
+    {
+        return Json();
+    }
+    fseek(fp, 0, SEEK_END);
+    long length = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    char* buffer = (char*)malloc(length + 1);
+    buffer[length] = '\0';
+    fread(buffer, 1, length, fp);
+    return Json(buffer, true);
+}
+
 const std::string Json::dump() const
 {
     return dump(0);

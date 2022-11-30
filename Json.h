@@ -4,6 +4,7 @@
 #include "json_parser.h"
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -61,6 +62,7 @@ public:
 public:
     static Json parse(const std::string& str);
     static Json parse(const std::ifstream& stream);
+    static Json parse(FILE* fp);
 
     const std::string dump() const;
     const std::string dump(int spaces) const;
