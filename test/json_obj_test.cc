@@ -3,6 +3,19 @@
 
 using namespace wfrest;
 
+TEST(ObjTest, create_obj)
+{
+    Json data = Json::Object{{"key1", 123}, {"key2", true}};
+    EXPECT_EQ(data.dump(), R"({"key1":123,"key2":true})");
+}
+
+TEST(ObjTest, empty_obj)
+{
+    Json data = Json::Object();
+    EXPECT_TRUE(data.is_object());
+    EXPECT_EQ(data.dump(), "{}");
+}
+
 TEST(ObjTest, one_level)
 {
     Json data;
@@ -100,8 +113,8 @@ TEST(ObjTest, clear)
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
 }
 
-// int main(int argc, char** argv)
-// {
-//     testing::InitGoogleTest(&argc, argv);
-//     return RUN_ALL_TESTS();
-// }
+int main(int argc, char** argv)
+{
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
