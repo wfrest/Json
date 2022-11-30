@@ -143,4 +143,40 @@ Json empty_object_explicit = Json::Object();
 Json empty_array_explicit = Json::Array();
 ```
 
+## Parse and dump
+
+```cpp
+Json js = Json::parse(R"({"test1":false})");
+```
+
+```cpp 
+Json data;
+data["key"]["chanchan"] = 1;
+
+// default compact json string
+{"key":{"chanchan":1}}
+
+// using member function
+// dump() is same as str()
+std::string dump_str = data.dump();
+std::string str = data.str();
+
+// using free function
+std::string to_str = to_string(data);
+
+// streams
+std::ostringstream os;
+os << data;
+std::cout << os.str() << std::endl;
+
+// For pretty stringification, there is the option to choose the identation size in number of spaces:
+{
+  "key": {
+    "chanchan": 1
+  }
+}
+std::string dump_str_pretty = data.dump(2);
+std::string str_pretty = data.str(2);
+std::string to_str_pretty = to_string(data, 2);
+```
 
