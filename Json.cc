@@ -1,6 +1,5 @@
 #include "Json.h"
 #include "json_parser.h"
-#include <algorithm>
 
 namespace wfrest
 {
