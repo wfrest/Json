@@ -30,6 +30,7 @@ TEST(JsonTest, arr_search)
     data.push_back("string"); // 3
     data.push_back(true);     // 4
     data.push_back(false);    // 5
+
     Json::Object obj;
     obj["123"] = 12;
     obj["123"]["1"] = "test";
@@ -94,10 +95,42 @@ TEST(JsonTest, is_type)
 
 TEST(JsonTest, const_operator)
 {
-    const Json js(
+    const Json js = Json::parse(
         R"({"test1":false,"test2":true,"test3":"string","test4":null})");
     EXPECT_EQ(js["test1"].get<bool>(), false);
     EXPECT_EQ(js["test3"].get<std::string>(), "string");
+}
+
+TEST(JsonTest, create_obj)
+{
+    Json data = Json::Object{{"key1", 123}, {"key2", true}};
+    EXPECT_EQ(data.dump(), R"({"key1":123,"key2":true})");
+}
+
+TEST(JsonTest, create_arr)
+{
+    Json data = Json::Array{1, true, "string", nullptr, "123"};
+    EXPECT_EQ(data.dump(), R"([1,true,"string",null,"123"])");
+}
+
+TEST(JsonTest, create)
+{
+    Json data = Json::Object{
+        {"null", nullptr},
+        {"integer", 1},
+        {"float", 1.3},
+        {"boolean", true},
+        {"string", "something"},
+        {"array", Json::Array{1, 2}},
+        {"object",
+         Json::Object{
+             {"key", "value"},
+             {"key2", "value2"},
+         }},
+    };
+    EXPECT_EQ(
+        data.dump(),
+        R"({"null":null,"integer":1,"float":1.3,"boolean":true,"string":"something","array":[1,2],"object":{"key":"value","key2":"value2"}})");
 }
 
 int main(int argc, char** argv)

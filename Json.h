@@ -2,6 +2,7 @@
 #define WFREST_JSON_H_
 
 #include "json_parser.h"
+#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <functional>
@@ -50,6 +51,7 @@ struct is_number
 
 class Object_S;
 class Array_S;
+
 class Json
 {
 public:
@@ -382,10 +384,6 @@ private:
 
     bool can_arr_push_back();
 
-    void to_object();
-
-    void to_array();
-
     // can convert to any type, just like a placeholder
     bool is_placeholder() const
     {
@@ -434,6 +432,7 @@ private:
 public:
     // Constructors for the various types of JSON value.
     Json();
+    Json(const std::string& str, bool parse_flag);
     Json(const std::string& str);
     Json(const char* str);
     Json(std::nullptr_t null);
@@ -442,6 +441,8 @@ public:
     Json(bool val);
     Json(const Array& val);
     Json(const Object& val);
+    Json(Array&& val);
+    Json(Object&& val);
 
     ~Json();
 
@@ -451,6 +452,7 @@ public:
     Json& operator=(Json&& other);
 
 protected:
+    // todo : need remove, default null type
     struct Empty
     {
     };
@@ -472,6 +474,9 @@ protected:
     {
         return parent_ == nullptr;
     }
+    void to_object();
+
+    void to_array();
 
 private:
     const json_value_t* node_ = nullptr;
@@ -482,24 +487,43 @@ private:
 class Object_S : public Json
 {
 public:
-    Object_S() : Json(*this)
+    Object_S()
     {
+        this->to_object();
     }
     Object_S(const json_value_t* node, const json_value_t* parent)
         : Json(node, parent)
     {
+    }
+    using string_type = typename std::basic_string<char, std::char_traits<char>,
+                                                   std::allocator<char>>;
+    using pair_type = std::pair<string_type, Json>;
+
+    Object_S(std::initializer_list<pair_type> list)
+    {
+        std::for_each(list.begin(), list.end(),
+                      [this](const pair_type& pair)
+                      { this->push_back(pair.first, pair.second); });
     }
 };
 
 class Array_S : public Json
 {
 public:
-    Array_S() : Json(*this)
+    Array_S()
     {
+        this->to_array();
     }
+
     Array_S(const json_value_t* node, const json_value_t* parent)
         : Json(node, parent)
     {
+    }
+
+    Array_S(std::initializer_list<Json> list)
+    {
+        std::for_each(list.begin(), list.end(),
+                      [this](const Json& js) { this->push_back(js); });
     }
 };
 

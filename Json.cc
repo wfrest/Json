@@ -1,5 +1,6 @@
 #include "Json.h"
 #include "json_parser.h"
+#include <algorithm>
 
 namespace wfrest
 {
@@ -55,11 +56,17 @@ Json::Json() : node_(json_value_create(JSON_VALUE_NULL))
 {
 }
 
-Json::Json(const std::string& str) : node_(json_value_parse(str.c_str()))
+Json::Json(const std::string& str, bool parse_flag)
+    : node_(json_value_parse(str.c_str()))
 {
 }
 
-Json::Json(const char* str) : node_(json_value_parse(str))
+Json::Json(const std::string& str)
+    : node_(json_value_create(JSON_VALUE_STRING, str.c_str()))
+{
+}
+
+Json::Json(const char* str) : node_(json_value_create(JSON_VALUE_STRING, str))
 {
 }
 
@@ -82,12 +89,33 @@ Json::Json(bool val)
 {
 }
 
-Json::Json(const Array& val) : node_(json_value_create(JSON_VALUE_ARRAY))
+// todo : optimize
+Json::Json(const Array& val)
+    : node_(json_value_copy(val.node_)), parent_(val.parent_),
+      parent_key_(val.parent_key_)
 {
 }
 
-Json::Json(const Object& val) : node_(json_value_create(JSON_VALUE_OBJECT))
+Json::Json(const Object& val)
+    : node_(json_value_copy(val.node_)), parent_(val.parent_),
+      parent_key_(val.parent_key_)
 {
+}
+
+Json::Json(Array&& val)
+    : node_(val.node_), parent_(val.parent_),
+      parent_key_(std::move(val.parent_key_))
+{
+    val.node_ = nullptr;
+    val.parent_ = nullptr;
+}
+
+Json::Json(Object&& val)
+    : node_(val.node_), parent_(val.parent_),
+      parent_key_(std::move(val.parent_key_))
+{
+    val.node_ = nullptr;
+    val.parent_ = nullptr;
 }
 
 Json::~Json()
@@ -136,6 +164,7 @@ Json::Json(Json&& other)
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
+    parent_key_ = std::move(other.parent_key_);
 }
 
 Json& Json::operator=(Json&& other)
@@ -148,19 +177,20 @@ Json& Json::operator=(Json&& other)
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
+    parent_key_ = std::move(other.parent_key_);
     return *this;
 }
 
 Json Json::parse(const std::string& str)
 {
-    return Json(str);
+    return Json(str, true);
 }
 
 Json Json::parse(const std::ifstream& stream)
 {
     std::stringstream buffer;
     buffer << stream.rdbuf();
-    return Json(buffer.str());
+    return Json(buffer.str(), true);
 }
 
 const std::string Json::dump() const
