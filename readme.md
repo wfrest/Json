@@ -4,6 +4,8 @@
 
 To create a json object by reading a JSON file:
 
+You can use c++ file stream: 
+
 ```cpp
 #include "Json.h"
 #include <fstream>
@@ -13,9 +15,17 @@ std::ifstream f("example.json");
 Json data = Json::parse(f); 
 ```
 
+Or you can use `FILE*`
+
+```cpp
+FILE* fp = fopen("example.json", "r");
+Json data = Json::parse(fp);
+fclose(fp);
+```
+
 ### Creating json objects from string 
 
-// Using (raw) string literals and json::parse
+Using (raw) string literals and json::parse
 
 ```cpp
 Json data = Json::parse(R"(
@@ -26,9 +36,49 @@ Json data = Json::parse(R"(
 )");
 ```
 
+## Creating json objects by initializer list
+
+```cpp
+Json data = Json::Object{
+    {"null", nullptr},
+    {"integer", 1},
+    {"float", 1.3},
+    {"boolean", true},
+    {"string", "something"},
+    {"array", Json::Array{1, 2}},
+    {"object",
+     Json::Object{
+         {"key", "value"},
+         {"key2", "value2"},
+     }},
+};
+```
+
+## Create simple json value
+
+```cpp
+Json null1 = nullptr;
+
+Json num1 = 1;
+
+Json num2 = 1.0;
+
+Json bool1 = true;
+
+Json bool2 = false;
+
+Json str1 = "string";
+
+Json obj1 = Json::Object();
+
+Json arr1 = Json::Array();
+```
+
 ## Build Json::Object and Json::Array
 
 ### use operator[]
+
+The JSON values can be constructed (comfortably) by using standard index operators:
 
 Use operator[] to assign values to JSON objects:
 
@@ -89,8 +139,8 @@ data.push_back(arr);
 If you want to be explicit or express the json type is array or object, the functions Json::Array and Json::Object will help:
 
 ```cpp
-Json::Object obj
-Json::Array arr;
+Json empty_object_explicit = Json::Object();
+Json empty_array_explicit = Json::Array();
 ```
 
 

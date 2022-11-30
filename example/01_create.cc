@@ -38,14 +38,25 @@ void create_by_string()
 
 void create_by_initailizer()
 {
-    // Json data = {{"pi", 3.141},        {"happy", true},
-    //              {"pi", 3.141},        {"name", "chanchan"},
-    //              {"nothing", nullptr}, {"123", Json::Object{"123", 123}}};
-    // std::cout << data << std::endl;
+    Json data = Json::Object{
+        {"null", nullptr},
+        {"integer", 1},
+        {"float", 1.3},
+        {"boolean", true},
+        {"string", "something"},
+        {"array", Json::Array{1, 2}},
+        {"object",
+         Json::Object{
+             {"key", "value"},
+             {"key2", "value2"},
+         }},
+    };
+    std::cout << data << std::endl;
 }
 
 int main()
 {
+    std::cout << "create example.json file" << std::endl;
     create_json_file();
 
     std::cout << "create json from file stream" << std::endl;
@@ -56,5 +67,7 @@ int main()
 
     std::cout << "create json from file" << std::endl;
     create_by_file();
-    // create_by_initailizer();
+
+    std::cout << "create by initializer list" << std::endl;
+    create_by_initailizer();
 }
