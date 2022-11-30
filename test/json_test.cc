@@ -74,6 +74,23 @@ TEST(JsonTest, create)
         R"({"null":null,"integer":1,"float":1.3,"boolean":true,"string":"something","array":[1,2],"object":{"key":"value","key2":"value2"}})");
 }
 
+TEST(JsonTest, dump)
+{
+    Json data;
+    data["key"] = 1;
+    data["name"] = "chanchan";
+    // using member function
+    // dump is same as str
+    EXPECT_EQ(data.dump(), R"({"key":1,"name":"chanchan"})");
+    EXPECT_EQ(data.str(), R"({"key":1,"name":"chanchan"})");
+    // using free function
+    EXPECT_EQ(to_string(data), R"({"key":1,"name":"chanchan"})");
+    // streams
+    std::ostringstream os;
+    os << data;
+    EXPECT_EQ(os.str(), R"({"key":1,"name":"chanchan"})");
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

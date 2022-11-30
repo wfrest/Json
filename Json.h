@@ -67,6 +67,17 @@ public:
     const std::string dump() const;
     const std::string dump(int spaces) const;
 
+    // the same as dump
+    const std::string str() const
+    {
+        return dump();
+    }
+
+    const std::string str(int spaces) const
+    {
+        return dump(spaces);
+    }
+
     Json operator[](const std::string& key);
 
     Json operator[](const std::string& key) const;
@@ -583,6 +594,19 @@ void Json::push_back(const T& val)
     json_array_append(arr, 0, copy_json.node_);
     copy_json.node_ = nullptr;
 }
+
+///////////////////////// Helper function /////////////////
+
+inline std::string to_string(const Json& js)
+{
+    return js.str();
+}
+
+inline std::string to_string(const Json& js, int spaces)
+{
+    return js.str(spaces);
+}
+
 } // namespace wfrest
 
 #endif // WFREST_JSON_H_
