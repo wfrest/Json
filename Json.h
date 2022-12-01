@@ -270,19 +270,91 @@ public:
     {
     public:
         friend class Json;
-        explicit iterator(const json_value_t* val) : val_(val)
+        explicit iterator(const json_value_t* val) : val_(val), json_(new Json)
         {
         }
 
-        Json operator*() const
+        ~iterator()
         {
-            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            if (json_ != nullptr)
             {
-                return Json(cursor_, val_, std::string(name_));
+                delete json_;
             }
-            return Json(cursor_, val_);
         }
 
+        iterator(const iterator& iter)
+        {
+            val_ = iter.val_;
+            key_ = iter.key_;
+            json_ = new Json(iter.json_->node_, iter.json_->parent_,
+                             iter.json_->parent_key_);
+        }
+
+        iterator& operator=(const iterator& iter)
+        {
+            if (this == &iter)
+            {
+                return *this;
+            }
+            val_ = iter.val_;
+            key_ = iter.key_;
+            json_->reset(iter.json_->node_, iter.json_->parent_,
+                         iter.json_->parent_key_);
+            return *this;
+        }
+
+        iterator(iterator&& iter)
+            : val_(iter.val_), key_(iter.key_), json_(iter.json_)
+        {
+            iter.val_ = nullptr;
+            iter.key_ = nullptr;
+            iter.json_ = nullptr;
+        }
+
+        iterator& operator=(iterator&& iter)
+        {
+            if (this == &iter)
+            {
+                return *this;
+            }
+            val_ = iter.val_;
+            iter.val_ = nullptr;
+            key_ = iter.key_;
+            iter.key_ = nullptr;
+            delete json_;
+            json_ = iter.json_;
+            iter.json_ = nullptr;
+            return *this;
+        }
+
+        Json& operator*() const
+        {
+            if (key_ != nullptr)
+            {
+                json_->parent_key_ = std::string(key_);
+            }
+            else
+            {
+                json_->parent_key_ = "";
+            }
+            return *json_;
+        }
+
+        Json* operator->() const
+        {
+            if (key_ != nullptr)
+            {
+                json_->parent_key_ = std::string(key_);
+            }
+            else
+            {
+                json_->parent_key_ = "";
+            }
+
+            return json_;
+        }
+
+        // more efficient
         iterator& operator++()
         {
             if (is_end())
@@ -305,7 +377,7 @@ public:
 
         bool operator==(const iterator& other) const
         {
-            return cursor_ == other.cursor_;
+            return json_->node_ == other.json_->node_;
         }
 
         bool operator!=(iterator const& other) const
@@ -313,37 +385,23 @@ public:
             return !(*this == other);
         }
 
-        std::string key() const
-        {
-            return name_ == nullptr ? "" : name_;
-        }
-
-        Json value() const
-        {
-            if (json_value_type(val_) == JSON_VALUE_OBJECT)
-            {
-                return Json(cursor_, val_, std::string(name_));
-            }
-            return Json(cursor_, val_);
-        }
-
     private:
         void set_begin()
         {
-            cursor_ = nullptr;
-            name_ = nullptr;
+            json_->node_ = nullptr;
+            key_ = nullptr;
             forward();
         }
 
         void set_end()
         {
-            cursor_ = nullptr;
-            name_ = nullptr;
+            json_->node_ = nullptr;
+            key_ = nullptr;
         }
 
         bool is_end()
         {
-            return cursor_ == nullptr && name_ == nullptr;
+            return json_->node_ == nullptr && key_ == nullptr;
         }
 
         void forward()
@@ -351,20 +409,20 @@ public:
             if (json_value_type(val_) == JSON_VALUE_OBJECT)
             {
                 json_object_t* obj = json_value_object(val_);
-                name_ = json_object_next_name(name_, obj);
-                cursor_ = json_object_next_value(cursor_, obj);
+                key_ = json_object_next_name(key_, obj);
+                json_->node_ = json_object_next_value(json_->node_, obj);
             }
             else if (json_value_type(val_) == JSON_VALUE_ARRAY)
             {
                 json_array_t* arr = json_value_array(val_);
-                cursor_ = json_array_next_value(cursor_, arr);
+                json_->node_ = json_array_next_value(json_->node_, arr);
             }
         }
 
     private:
         const json_value_t* val_ = nullptr;
-        const char* name_ = nullptr;
-        const json_value_t* cursor_ = nullptr;
+        const char* key_ = nullptr;
+        Json* json_; // cursor
     };
 
     iterator begin()
@@ -465,6 +523,9 @@ protected:
     Json(const json_value_t* node, const json_value_t* parent);
     Json(const json_value_t* node, const json_value_t* parent,
          std::string&& key);
+    Json(const json_value_t* node, const json_value_t* parent,
+         const std::string& key);
+
     Json(const Empty&);
 
     bool is_valid() const
@@ -480,10 +541,34 @@ protected:
 
     void to_array();
 
+    void reset()
+    {
+        node_ = nullptr;
+        parent_ = nullptr;
+        parent_key_.clear();
+    }
+
+    void reset(const json_value_t* node, const json_value_t* parent,
+               const std::string& parent_key)
+    {
+        node_ = node;
+        parent_ = parent;
+        parent_key_ = parent_key;
+    }
+
+    void reset(const json_value_t* node, const json_value_t* parent,
+               std::string&& parent_key)
+    {
+        node_ = node;
+        parent_ = parent;
+        parent_key_ = std::move(parent_key);
+    }
+
 private:
     const json_value_t* node_ = nullptr;
     const json_value_t* parent_ = nullptr;
     std::string parent_key_;
+    bool allocated_ = true;
 };
 
 class Object_S : public Json
