@@ -10,4 +10,8 @@ target("03_stringfy")
     add_files("03_stringfy.cc")
     add_deps("Json")
 
+target("04_iter")
+    add_files("04_iter.cc")
+    add_deps("Json")
+
 

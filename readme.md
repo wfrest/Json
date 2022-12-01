@@ -74,66 +74,6 @@ Json obj1 = Json::Object();
 Json arr1 = Json::Array();
 ```
 
-## Build Json::Object and Json::Array
-
-### use operator[]
-
-The JSON values can be constructed (comfortably) by using standard index operators:
-
-Use operator[] to assign values to JSON objects:
-
-```cpp
-// create an empty structure (null)
-Json data;
-std::cout << "empty structure is " << data << std::endl;
-
-// add a number that is stored as double (note the implicit conversion of j
-// to an object)
-data["pi"] = 3.141;
-
-// add a Boolean that is stored as bool
-data["happy"] = true;
-
-// add a string that is stored as std::string
-data["name"] = "chanchan";
-
-// add another null object by passing nullptr
-data["nothing"] = nullptr;
-
-// add an object inside the object
-data["answer"]["everything"] = 42;
-```
-
-### use push_back
-
-Object case:
-
-```cpp
-Json data;
-
-data.push_back("pi", 3.141);
-data.push_back("happy", true);
-data.push_back("name", "chanchan");
-data.push_back("nothing", nullptr);
-Json answer;
-answer.push_back("everything", 42);
-data.push_back("answer", answer);
-```
-
-Array Case:
-
-```cpp
-Json data;
-data.push_back(3.141);
-data.push_back(true);
-data.push_back("chanchan");
-data.push_back(nullptr);
-Json arr;
-arr.push_back(42);
-arr.push_back("answer");
-data.push_back(arr);
-```
-
 ### Explict declare Json type 
 
 If you want to be explicit or express the json type is array or object, the functions Json::Array and Json::Object will help:
@@ -172,4 +112,82 @@ std::cout << os.str() << std::endl;
 }
 std::string dump_str_pretty = data.dump(2);
 ```
+
+## STL-like access
+
+### Example JSON arrays
+
+- Create an array using push_back
+
+```cpp
+Json data;
+data.push_back(3.141);
+data.push_back(true);
+data.push_back("chanchan");
+data.push_back(nullptr);
+Json arr;
+arr.push_back(42);
+arr.push_back("answer");
+data.push_back(arr);
+```
+
+- iterate the array 
+
+```cpp
+for (Json::iterator it = data.begin(); it != data.end(); it++)
+{
+    std::cout << it.value() << std::endl;
+}
+
+// range-based for
+for (const auto& it : data)
+{
+    std::cout << it << std::endl;
+}
+```
+
+### Example JSON objects
+
+- use push_back
+
+```cpp
+Json data;
+
+data.push_back("pi", 3.141);
+data.push_back("happy", true);
+data.push_back("name", "chanchan");
+data.push_back("nothing", nullptr);
+Json answer;
+answer.push_back("everything", 42);
+data.push_back("answer", answer);
+```
+
+- use operator[]
+
+The JSON values can be constructed (comfortably) by using standard index operators:
+
+Use operator[] to assign values to JSON objects:
+
+```cpp
+// create an empty structure (null)
+Json data;
+std::cout << "empty structure is " << data << std::endl;
+
+// add a number that is stored as double (note the implicit conversion of j
+// to an object)
+data["pi"] = 3.141;
+
+// add a Boolean that is stored as bool
+data["happy"] = true;
+
+// add a string that is stored as std::string
+data["name"] = "chanchan";
+
+// add another null object by passing nullptr
+data["nothing"] = nullptr;
+
+// add an object inside the object
+data["answer"]["everything"] = 42;
+```
+
 
