@@ -11,11 +11,7 @@ void stringfy()
     // {"key":{"chanchan":1}}
     //
     // using member function
-    // dump is same as str
     std::cout << data.dump() << std::endl;
-    std::cout << data.str() << std::endl;
-    // using free function
-    std::cout << to_string(data) << std::endl;
     // streams
     std::ostringstream os;
     os << data;
@@ -36,8 +32,6 @@ void stringfy_spaces()
     }
     */
     std::cout << data.dump(2) << std::endl;
-    std::cout << data.str(2) << std::endl;
-    std::cout << to_string(data, 2) << std::endl;
 }
 
 int main()

@@ -80,11 +80,7 @@ TEST(JsonTest, dump)
     data["key"] = 1;
     data["name"] = "chanchan";
     // using member function
-    // dump is same as str
     EXPECT_EQ(data.dump(), R"({"key":1,"name":"chanchan"})");
-    EXPECT_EQ(data.str(), R"({"key":1,"name":"chanchan"})");
-    // using free function
-    EXPECT_EQ(to_string(data), R"({"key":1,"name":"chanchan"})");
     // streams
     std::ostringstream os;
     os << data;
