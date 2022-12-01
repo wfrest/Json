@@ -631,7 +631,7 @@ Json::get() const
 template <typename T,
           typename std::enable_if<std::is_same<T, Json::Object>::value ||
                                       std::is_same<T, Json::Array>::value,
-                                  bool>::type = true>
+                                  bool>::type>
 void Json::placeholder_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(parent_);
@@ -644,7 +644,7 @@ void Json::placeholder_push_back(const std::string& key, const T& val)
 template <typename T,
           typename std::enable_if<std::is_same<T, Json::Object>::value ||
                                       std::is_same<T, Json::Array>::value,
-                                  bool>::type = true>
+                                  bool>::type>
 void Json::normal_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(node_);
@@ -656,7 +656,7 @@ void Json::normal_push_back(const std::string& key, const T& val)
 template <typename T,
           typename std::enable_if<std::is_same<T, Json::Object>::value ||
                                       ::std::is_same<T, Json::Array>::value,
-                                  bool>::type = true>
+                                  bool>::type>
 void Json::push_back(const T& val)
 {
     if (!can_arr_push_back())
