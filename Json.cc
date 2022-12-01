@@ -119,37 +119,46 @@ Json::Json(Object&& val)
 
 Json::~Json()
 {
-    // root node controls life cycle
-    if (is_root())
+    if (allocated_)
     {
         destroy_node(node_);
     }
 }
 
+// watcher constructor
 Json::Json(const json_value_t* parent, std::string&& key)
     : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
-      parent_key_(std::move(key))
+      parent_key_(std::move(key)), allocated_(false)
 {
 }
 
 Json::Json(const json_value_t* parent, const std::string& key)
     : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
-      parent_key_(key)
+      parent_key_(key), allocated_(false)
 {
 }
 
 Json::Json(const json_value_t* parent)
-    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent)
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
+      allocated_(false)
 {
 }
 
 Json::Json(const json_value_t* node, const json_value_t* parent)
-    : node_(node), parent_(parent)
+    : node_(node), parent_(parent), allocated_(false)
 {
 }
+
 Json::Json(const json_value_t* node, const json_value_t* parent,
            std::string&& key)
-    : node_(node), parent_(parent), parent_key_(std::move(key))
+    : node_(node), parent_(parent), parent_key_(std::move(key)),
+      allocated_(false)
+{
+}
+
+Json::Json(const json_value_t* node, const json_value_t* parent,
+           const std::string& key)
+    : node_(node), parent_(parent), parent_key_(key), allocated_(false)
 {
 }
 
@@ -158,12 +167,11 @@ Json::Json(const Empty&) : node_(nullptr)
 }
 
 Json::Json(Json&& other)
+    : node_(other.node_), parent_(other.parent_),
+      parent_key_(std::move(other.parent_key_)), allocated_(other.allocated_)
 {
-    node_ = other.node_;
     other.node_ = nullptr;
-    parent_ = other.parent_;
     other.parent_ = nullptr;
-    parent_key_ = std::move(other.parent_key_);
 }
 
 Json& Json::operator=(Json&& other)
@@ -172,11 +180,16 @@ Json& Json::operator=(Json&& other)
     {
         return *this;
     }
+    if (allocated_)
+    {
+        destroy_node(node_);
+    }
     node_ = other.node_;
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
     parent_key_ = std::move(other.parent_key_);
+    allocated_ = other.allocated_;
     return *this;
 }
 
@@ -546,7 +559,7 @@ bool Json::empty() const
 
 void Json::clear()
 {
-    if (is_root())
+    if (allocated_)
     {
         destroy_node(node_);
         node_ = json_value_create(JSON_VALUE_OBJECT);
@@ -555,7 +568,7 @@ void Json::clear()
 
 void Json::to_object()
 {
-    if (is_root() && is_null())
+    if (allocated_ && is_null())
     {
         destroy_node(node_);
         node_ = json_value_create(JSON_VALUE_OBJECT);
@@ -564,7 +577,7 @@ void Json::to_object()
 
 void Json::to_array()
 {
-    if (is_root() && is_null())
+    if (allocated_ && is_null())
     {
         destroy_node(node_);
         node_ = json_value_create(JSON_VALUE_ARRAY);
