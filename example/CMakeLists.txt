@@ -10,8 +10,9 @@ set(JSON_EXAMPLES
 
 foreach(src ${JSON_EXAMPLES})
   message(STATUS "example files found: ${src}.cc")
-  add_executable(${src} EXCLUDE_FROM_ALL ${src}.cc ../json_parser.c ../rbtree.c ../json.cc)
+  add_executable(${src} EXCLUDE_FROM_ALL ${src}.cc)
   target_include_directories(${src} PUBLIC ${PROJECT_SOURCE_DIR})
+  target_link_libraries(${src} Json)
 endforeach()
 
 foreach(src ${JSON_EXAMPLES})

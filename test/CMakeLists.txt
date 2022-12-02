@@ -15,9 +15,9 @@ set(JSON_TEST_LIST
 
 foreach(src ${JSON_TEST_LIST})
   message(STATUS "unittest files found: ${src}.cc")
-  add_executable(${src} EXCLUDE_FROM_ALL ${src}.cc ../json_parser.c ../rbtree.c ../json.cc)
+  add_executable(${src} EXCLUDE_FROM_ALL ${src}.cc)
   target_include_directories(${src} PUBLIC ${PROJECT_SOURCE_DIR})
-  target_link_libraries(${src} GTest::gtest GTest::gtest_main)
+  target_link_libraries(${src} GTest::gtest GTest::gtest_main Json)
   add_test(${src} ${src})
   add_dependencies(check ${src})
 endforeach()
