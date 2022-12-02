@@ -233,7 +233,7 @@ const std::string Json::dump(int spaces) const
     return str;
 }
 
-Json Json::operator[](const std::string& key)
+Json Json::operator[](const char* key)
 {
     if (!is_valid())
     {
@@ -248,7 +248,7 @@ Json Json::operator[](const std::string& key)
     {
         // if exists
         json_object_t* obj = json_value_object(node_);
-        const json_value_t* res = json_object_find(key.c_str(), obj);
+        const json_value_t* res = json_object_find(key, obj);
         if (res != nullptr)
         {
             return Json(res, node_);
@@ -269,7 +269,7 @@ Json Json::operator[](const std::string& key)
     return Json(node_, key);
 }
 
-Json Json::operator[](const std::string& key) const
+Json Json::operator[](const char* key) const
 {
     if (!is_valid() || !is_object())
     {
@@ -277,12 +277,22 @@ Json Json::operator[](const std::string& key) const
     }
     const json_value_t* val = node_;
     json_object_t* obj = json_value_object(val);
-    const json_value_t* res = json_object_find(key.c_str(), obj);
+    const json_value_t* res = json_object_find(key, obj);
     if (res != nullptr)
     {
         return Json(res, node_);
     }
     return Json(Empty());
+}
+
+Json Json::operator[](const std::string& key)
+{
+    return this->operator[](key.c_str());
+}
+
+Json Json::operator[](const std::string& key) const
+{
+    return this->operator[](key.c_str());
 }
 
 bool Json::has(const std::string& key) const

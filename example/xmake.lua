@@ -1,3 +1,5 @@
+add_cxflags("-fPIE")
+
 target("01_create")
     add_files("01_create.cc")
     add_deps("Json")

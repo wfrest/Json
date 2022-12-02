@@ -13,6 +13,7 @@ if is_mode("release") then
     set_strip("all")
 end
 
+
 add_requires("gtest")
 
 add_includedirs("./")
@@ -21,6 +22,7 @@ target("Json")
     set_kind("static")
     add_files("*.c")
     add_files("*.cc")
+    add_cxflags("-fPIE")
 
 add_subdirs('test')
 add_subdirs('example')
