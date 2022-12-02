@@ -36,7 +36,7 @@ void arr_iter()
     }
     for (auto it = data.begin(); it != data.end(); ++it)
     {
-        std::cout << (*it).value() << std::endl;
+        std::cout << *it << std::endl;
     }
     for (const auto& it : data)
     {

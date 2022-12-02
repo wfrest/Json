@@ -37,21 +37,35 @@ TEST(ArrTest, arr_search)
     data.push_back(true);     // 4
     data.push_back(false);    // 5
 
-    Json::Object obj;
-    obj["123"] = 12;
-    obj["123"]["1"] = "test";
-    // todo : we need a move interface
-    // we copy here
-    data.push_back(obj); // 6
     EXPECT_EQ(data[0].get<int>(), 1);
     EXPECT_EQ(data[1].get<double>(), 2.1);
     EXPECT_EQ(data[2].get<std::nullptr_t>(), nullptr);
     EXPECT_EQ(data[3].get<std::string>(), "string");
     EXPECT_EQ(data[4].get<bool>(), true);
     EXPECT_EQ(data[5].get<bool>(), false);
+
+    // Object
+    Json::Object obj;
+    obj["123"] = 12;
+    obj["123"]["1"] = "test";
+    // todo : we need a move interface
+    // we copy here
+    data.push_back(obj); // 6
+
     // std::cout << data[6] << std::endl;
     // std::cout << data[6].get<Json::Object>().dump() << std::endl;
     EXPECT_EQ(data[6].get<Json::Object>().dump(), R"({"123":12})");
+
+    // Array
+    Json::Array arr;
+    arr.push_back(1);
+    arr.push_back(nullptr);
+
+    data.push_back(arr);
+
+    // std::cout << data[7] << std::endl;
+    // std::cout << data[7].get<Json::Array>().dump() << std::endl;
+    EXPECT_EQ(data[7].get<Json::Array>().dump(), R"([1,null])");
 
     // implicit conversion
     int a = data[0];
@@ -66,6 +80,12 @@ TEST(ArrTest, arr_search)
     EXPECT_EQ(e, true);
     bool f = data[5];
     EXPECT_EQ(f, false);
+
+    Json::Object g = data[6];
+    EXPECT_EQ(g.dump(), R"({"123":12})");
+
+    Json::Array h = data[7];
+    EXPECT_EQ(h.dump(), R"([1,null])");
 }
 
 int main(int argc, char** argv)
