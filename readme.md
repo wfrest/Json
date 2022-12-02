@@ -133,17 +133,69 @@ data.push_back(arr);
 
 - iterate the array 
 
-```cpp
+```cpp 
 for (Json::iterator it = data.begin(); it != data.end(); it++)
 {
-    std::cout << it.value() << std::endl;
+    std::cout << it->value() << std::endl;
 }
 
-// range-based for
+for (auto it = data.begin(); it != data.end(); ++it)
+{
+    std::cout << *it << std::endl;
+}
+
 for (const auto& it : data)
 {
     std::cout << it << std::endl;
 }
+```
+
+- access by using operator[index]
+
+```cpp
+Json data;
+data.push_back(1);        // 0
+data.push_back(2.1);      // 1
+data.push_back(nullptr);  // 2
+data.push_back("string"); // 3
+data.push_back(true);     // 4
+data.push_back(false);    // 5
+
+// You can user index to access the array element
+int num_int = data[0].get<int>();
+double num_double = data[1].get<double>();
+std::nullptr_t null = data[2].get<std::nullptr_t>();
+std::string str = data[3].get<std::string>();
+bool bool_true = data[4].get<bool>();
+bool bool_false = data[5].get<bool>();
+
+// implicit conversion
+int num_int = data[0];
+double num_double = data[1];
+std::nullptr_t null = data[2];
+std::string str = data[3];
+bool bool_true = data[4];
+bool bool_false = data[5];
+
+// Object
+Json::Object obj;
+obj["123"] = 12;
+obj["123"]["1"] = "test";
+data.push_back(obj); // 6
+Json::Object obj1 = data[6].get<Json::Object>();
+// implicit conversion
+Json::Object obj2 = data[6];
+
+
+// Array 
+Json::Array arr;
+arr.push_back(1);
+arr.push_back(nullptr);
+data.push_back(arr);
+
+Json::Array arr1 = data[7].get<Json::Array>();
+// implicit conversion
+Json::Array arr2 = data[7];
 ```
 
 ### Example JSON objects
@@ -190,4 +242,21 @@ data["nothing"] = nullptr;
 data["answer"]["everything"] = 42;
 ```
 
+- iterate object elements
+
+```cpp
+for (Json::iterator it = data.begin(); it != data.end(); it++)
+{
+    std::cout << it->key() << " : " << it->value() << std::endl;
+}
+for (auto it = data.begin(); it != data.end(); it++)
+{
+    // equal to it->value()
+    std::cout << *it << std::endl;
+}
+for (const auto& it : data)
+{
+    std::cout << it.key() << " : " << it.value() << std::endl;
+}
+```
 
