@@ -1,6 +1,6 @@
 set_project("Json")
 set_languages("c++11")
-set_warnings("all", "error")
+set_warnings("allextra")
 
 if is_mode("debug") then
     set_symbols("debug")
