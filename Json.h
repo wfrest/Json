@@ -67,6 +67,11 @@ public:
     const std::string dump() const;
     const std::string dump(int spaces) const;
 
+    // for correctness in clang
+    Json operator[](const char* key);
+
+    Json operator[](const char* key) const;
+
     Json operator[](const std::string& key);
 
     Json operator[](const std::string& key) const;
