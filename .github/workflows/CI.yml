@@ -1,0 +1,40 @@
+name: CMake
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: build-linux
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ clang cmake make libgtest-dev
+    
+    - name: setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+
+    - name: pull code
+      uses: actions/checkout@v2
+
+    - name: gcc make
+      run: |
+        xmake f --cc=gcc --cxx=g++
+        xmake -r
+    
+    - name: clang make
+      run: |
+        xmake f --cc=clang --cxx=clang++
+        xmake -r
+
+    # I want to run testcase, but don't know more elegant way
+    - name: run testcase
+      run: grep target test/xmake.lua | awk -F\" '{print $2}' | xargs -i xmake run {}  
