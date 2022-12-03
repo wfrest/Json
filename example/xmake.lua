@@ -1,4 +1,6 @@
 add_cxflags("-fPIE")
+set_group("example")
+set_default(false)
 
 target("01_create")
     add_files("01_create.cc")
