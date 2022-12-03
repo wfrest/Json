@@ -90,4 +90,4 @@ rldb-config.cmake
 .clangd/
 
 .xmake/
-
+build_cmake

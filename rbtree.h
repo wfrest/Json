@@ -6,41 +6,33 @@
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
   (at your option) any later version.
-
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
   linux/include/linux/rbtree.h
-
   To use rbtrees you'll have to implement your own insert and search cores.
   This will avoid us to use callbacks and to drop drammatically performances.
   I know it's not the cleaner way,  but in C (not in C++) to get
   performances and genericity...
-
   Some example of insert and search follows here. The search is a plain
   normal search over an ordered tree. The insert instead must be implemented
   int two steps: as first thing the code must insert the element in
   order as a red leaf in the tree, then the support library function
   rb_insert_color() must be called. Such function will do the
   not trivial work to rebalance the rbtree if necessary.
-
 -----------------------------------------------------------------------
 static inline struct page * rb_search_page_cache(struct inode * inode,
 						 unsigned long offset)
 {
 	rb_node_t * n = inode->i_rb_page_cache.rb_node;
 	struct page * page;
-
 	while (n)
 	{
 		page = rb_entry(n, struct page, rb_page_cache);
-
 		if (offset < page->offset)
 			n = n->rb_left;
 		else if (offset > page->offset)
@@ -50,7 +42,6 @@ static inline struct page * rb_search_page_cache(struct inode * inode,
 	}
 	return NULL;
 }
-
 static inline struct page * __rb_insert_page_cache(struct inode * inode,
 						   unsigned long offset,
 						   rb_node_t * node)
@@ -58,12 +49,10 @@ static inline struct page * __rb_insert_page_cache(struct inode * inode,
 	rb_node_t ** p = &inode->i_rb_page_cache.rb_node;
 	rb_node_t * parent = NULL;
 	struct page * page;
-
 	while (*p)
 	{
 		parent = *p;
 		page = rb_entry(parent, struct page, rb_page_cache);
-
 		if (offset < page->offset)
 			p = &(*p)->rb_left;
 		else if (offset > page->offset)
@@ -71,12 +60,9 @@ static inline struct page * __rb_insert_page_cache(struct inode * inode,
 		else
 			return page;
 	}
-
 	rb_link_node(node, parent, p);
-
 	return NULL;
 }
-
 static inline struct page * rb_insert_page_cache(struct inode * inode,
 						 unsigned long offset,
 						 rb_node_t * node)

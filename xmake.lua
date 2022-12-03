@@ -1,5 +1,7 @@
 set_project("Json")
 set_languages("c++11")
+set_warnings("allextra")
+-- using when developing
 -- set_warnings("all", "error")
 
 if is_mode("debug") then

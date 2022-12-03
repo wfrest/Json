@@ -1008,4 +1008,3 @@ json_value_t *json_array_remove(const json_value_t *val,
 	free(elem);
 	return (json_value_t *)val;
 }
-
