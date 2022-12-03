@@ -1,3 +1,33 @@
+## Fast🚀, efficient⌛️, and easiest💥 c++ Json library
+
+## Build
+
+Build the library
+
+```
+xmake
+```
+
+Install the library
+
+```
+sudo xmake install
+```
+
+Build and run the test
+
+```
+xmake build -g test
+xmake run -g test 
+```
+
+Build and run the example
+
+```
+xmake build -g example
+xmake run -g example
+```
+
 ## Examples
 
 ### Read JSON from a file

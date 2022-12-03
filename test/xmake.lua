@@ -1,4 +1,7 @@
 add_cxflags("-fPIE")
+set_group("test")
+set_default(false)
+
 target("json_test")
     add_files("json_test.cc")
     add_deps("Json")
