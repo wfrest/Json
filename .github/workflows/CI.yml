@@ -44,7 +44,7 @@ jobs:
         xmake build -rg test
         xmake build -rg example
 
-     - name : run test(clang)
+    - name : run test(clang)
       run: | 
         xmake run -g test
         xmake run -g example
