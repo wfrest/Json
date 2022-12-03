@@ -3,13 +3,13 @@
 
 #include <stddef.h>
 
-#define JSON_VALUE_STRING    1
-#define JSON_VALUE_NUMBER    2
-#define JSON_VALUE_OBJECT    3
-#define JSON_VALUE_ARRAY     4
-#define JSON_VALUE_TRUE      5
-#define JSON_VALUE_FALSE     6
-#define JSON_VALUE_NULL      7
+#define JSON_VALUE_STRING	1
+#define JSON_VALUE_NUMBER	2
+#define JSON_VALUE_OBJECT	3
+#define JSON_VALUE_ARRAY	4
+#define JSON_VALUE_TRUE		5
+#define JSON_VALUE_FALSE	6
+#define JSON_VALUE_NULL		7
 
 typedef struct __json_value json_value_t;
 typedef struct __json_object json_object_t;
@@ -31,51 +31,51 @@ json_object_t *json_value_object(const json_value_t *val);
 json_array_t *json_value_array(const json_value_t *val);
 
 const json_value_t *json_object_find(const char *name,
-                                     const json_object_t *obj);
+									 const json_object_t *obj);
 int json_object_size(const json_object_t *obj);
 const char *json_object_next_name(const char *name,
-                                  const json_object_t *obj);
+								  const json_object_t *obj);
 const json_value_t *json_object_next_value(const json_value_t *val,
-                                           const json_object_t *obj);
+										   const json_object_t *obj);
 const char *json_object_prev_name(const char *name,
-                                  const json_object_t *obj);
+								  const json_object_t *obj);
 const json_value_t *json_object_prev_value(const json_value_t *val,
-                                           const json_object_t *obj);
+										   const json_object_t *obj);
 const json_value_t *json_object_append(json_object_t *obj,
-                                       const char *name,
-                                       int type, ...);
+									   const char *name,
+									   int type, ...);
 json_value_t *json_object_remove(const json_value_t *val,
-                                 json_object_t *obj);
+								 json_object_t *obj);
 
 int json_array_size(const json_array_t *arr);
 const json_value_t *json_array_next_value(const json_value_t *val,
-                                          const json_array_t *arr);
+										  const json_array_t *arr);
 const json_value_t *json_array_prev_value(const json_value_t *val,
-                                          const json_array_t *arr);
+										  const json_array_t *arr);
 const json_value_t *json_array_append(json_array_t *arry,
-                                      int type, ...);
+									  int type, ...);
 json_value_t *json_array_remove(const json_value_t *val,
-                                json_array_t *arr);
+								json_array_t *arr);
 
 #ifdef __cplusplus
 }
 #endif
 
-#define json_object_for_each(name, val, obj)                 \
-    for (name = NULL, val = NULL;                            \
-        name = json_object_next_name(name, obj),             \
-        val = json_object_next_value(val, obj), val; )
+#define json_object_for_each(name, val, obj) \
+	for (name = NULL, val = NULL; \
+		 name = json_object_next_name(name, obj), \
+		 val = json_object_next_value(val, obj), val; )
 
-#define json_object_for_each_prev(name, val, obj)            \
-    for (name = NULL, val = NULL;                            \
-        name = json_object_prev_name(name, obj),             \
-        val = json_object_prev_value(val, obj), val; )
+#define json_object_for_each_prev(name, val, obj) \
+	for (name = NULL, val = NULL; \
+		 name = json_object_prev_name(name, obj), \
+		 val = json_object_prev_value(val, obj), val; )
 
 #define json_array_for_each(val, arr) \
-    for (val = NULL; val = json_array_next_value(val, arr), val; )
+	for (val = NULL; val = json_array_next_value(val, arr), val; )
 
 #define json_array_for_each_prev(val, arr) \
-    for (val = NULL; val = json_array_prev_value(val, arr), val; )
+	for (val = NULL; val = json_array_prev_value(val, arr), val; )
 
 #endif
 
