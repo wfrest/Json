@@ -1,21 +1,24 @@
-add_cxflags("-fPIE")
 set_group("example")
 set_default(false)
 
-target("01_create")
-    add_files("01_create.cc")
-    add_deps("Json")
+add_cxflags("-fPIE")
+add_deps("Json")
+set_kind("binary")
 
-target("02_create_stl_like")
-    add_files("02_create_stl_like.cc")
-    add_deps("Json")
+function all_examples()
+    local res = {}
+    for _, x in ipairs(os.files("**.cc")) do
+        local item = {}
+        local s = path.filename(x)
+        table.insert(item, s:sub(1, #s - 3))       -- target
+        table.insert(item, path.relative(x, "."))  -- source
+        table.insert(res, item)
+    end
+    return res
+end
 
-target("03_stringfy")
-    add_files("03_stringfy.cc")
-    add_deps("Json")
-
-target("04_iter")
-    add_files("04_iter.cc")
-    add_deps("Json")
-
+for _, example in ipairs(all_examples()) do
+target(example[1])
+    add_files(example[2])
+end
 
