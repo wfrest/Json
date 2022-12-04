@@ -1,7 +1,8 @@
 set_project("Json")
-set_languages("c99", "c++11")
 
+set_languages("c99", "c++11")
 set_version("0.9.0")
+set_warnings("allextra")
 
 if is_mode("debug") then
     set_symbols("debug")
