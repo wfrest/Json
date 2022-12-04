@@ -1,25 +1,27 @@
-add_cxflags("-fPIE")
+add_requires("gtest")
+
 set_group("test")
 set_default(false)
 
-target("json_test")
-    add_files("json_test.cc")
-    add_deps("Json")
-    add_packages("gtest")
+add_cxflags("-fPIE")
+add_packages("gtest")
+add_deps("Json")
+set_kind("binary")
 
-target("json_obj_test")
-    add_files("json_obj_test.cc")
-    add_deps("Json")
-    add_packages("gtest")
+function all_tests()
+    local res = {}
+    for _, x in ipairs(os.files("**.cc")) do
+        local item = {}
+        local s = path.filename(x)
+        table.insert(item, s:sub(1, #s - 3))       -- target
+        table.insert(item, path.relative(x, "."))  -- source
+        table.insert(res, item)
+    end
+    return res
+end
 
-target("json_arr_test")
-    add_files("json_arr_test.cc")
-    add_deps("Json")
-    add_packages("gtest")
-
-target("iter_test")
-    add_files("iter_test.cc")
-    add_deps("Json")
-    add_packages("gtest")
-
+for _, test in ipairs(all_tests()) do
+target(test[1])
+    add_files(test[2])
+end
 
