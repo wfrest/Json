@@ -291,7 +291,8 @@ private:
     void normal_push_back(const std::string& key, const Json& val);
 
 public:
-    // for array
+    void erase(const std::string& key);
+
     template <typename T, typename std::enable_if<detail::is_number<T>::value,
                                                   bool>::type = true>
     void push_back(T val)
@@ -315,6 +316,8 @@ public:
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
     void push_back(const Json& val);
+
+    void erase(int index);
 
 private:
     template <typename T, typename std::enable_if<detail::is_number<T>::value,
