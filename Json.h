@@ -271,15 +271,15 @@ public:
     void push_back(const Json& val);
 
 public:
-    class iterator
+    class IteratorBase
     {
     public:
         friend class Json;
-        explicit iterator(const json_value_t* val) : val_(val), json_(new Json)
+        explicit IteratorBase(const json_value_t* val) : val_(val), json_(new Json)
         {
         }
 
-        ~iterator()
+        ~IteratorBase()
         {
             if (json_ != nullptr)
             {
@@ -287,7 +287,7 @@ public:
             }
         }
 
-        iterator(const iterator& iter)
+        IteratorBase(const IteratorBase& iter)
         {
             val_ = iter.val_;
             key_ = iter.key_;
@@ -295,7 +295,7 @@ public:
                              iter.json_->parent_key_);
         }
 
-        iterator& operator=(const iterator& iter)
+        IteratorBase& operator=(const IteratorBase& iter)
         {
             if (this == &iter)
             {
@@ -308,7 +308,7 @@ public:
             return *this;
         }
 
-        iterator(iterator&& iter)
+        IteratorBase(IteratorBase&& iter)
             : val_(iter.val_), key_(iter.key_), json_(iter.json_)
         {
             iter.val_ = nullptr;
@@ -316,7 +316,7 @@ public:
             iter.json_ = nullptr;
         }
 
-        iterator& operator=(iterator&& iter)
+        IteratorBase& operator=(IteratorBase&& iter)
         {
             if (this == &iter)
             {
@@ -359,7 +359,30 @@ public:
             return json_;
         }
 
-        // more efficient
+        bool operator==(const IteratorBase& other) const
+        {
+            return json_->node_ == other.json_->node_;
+        }
+
+        bool operator!=(IteratorBase const& other) const
+        {
+            return !(*this == other);
+        }
+
+    private:
+        const json_value_t* val_ = nullptr;
+        const char* key_ = nullptr;
+        Json* json_; // cursor
+    };
+
+    class iterator : public IteratorBase
+    {
+    public:
+        friend class Json;
+        explicit iterator(const json_value_t* val) : IteratorBase(val)
+        {
+        }
+
         iterator& operator++()
         {
             if (is_end())
@@ -378,16 +401,6 @@ public:
                 ++(*this);
             }
             return old;
-        }
-
-        bool operator==(const iterator& other) const
-        {
-            return json_->node_ == other.json_->node_;
-        }
-
-        bool operator!=(iterator const& other) const
-        {
-            return !(*this == other);
         }
 
     private:
@@ -423,11 +436,70 @@ public:
                 json_->node_ = json_array_next_value(json_->node_, arr);
             }
         }
+    };
+
+
+    class reverse_iterator : public IteratorBase
+    {
+    public:
+        friend class Json;
+        explicit reverse_iterator(const json_value_t* val) : IteratorBase(val)
+        {
+        }
+
+        reverse_iterator& operator++()
+        {
+            if (is_rend())
+            {
+                return *this;
+            }
+            backward();
+            return *this;
+        }
+
+        reverse_iterator operator++(int)
+        {
+            reverse_iterator old = (*this);
+            if (!is_rend())
+            {
+                ++(*this);
+            }
+            return old;
+        }
 
     private:
-        const json_value_t* val_ = nullptr;
-        const char* key_ = nullptr;
-        Json* json_; // cursor
+        void set_rbegin()
+        {
+            json_->node_ = nullptr;
+            key_ = nullptr;
+            backward();
+        }
+
+        void set_rend()
+        {
+            json_->node_ = nullptr;
+            key_ = nullptr;
+        }
+
+        bool is_rend()
+        {
+            return json_->node_ == nullptr && key_ == nullptr;
+        }
+
+        void backward()
+        {
+            if (json_value_type(val_) == JSON_VALUE_OBJECT)
+            {
+                json_object_t* obj = json_value_object(val_);
+                key_ = json_object_prev_name(key_, obj);
+                json_->node_ = json_object_prev_value(json_->node_, obj);
+            }
+            else if (json_value_type(val_) == JSON_VALUE_ARRAY)
+            {
+                json_array_t* arr = json_value_array(val_);
+                json_->node_ = json_array_prev_value(json_->node_, arr);
+            }
+        }
     };
 
     iterator begin()
@@ -441,6 +513,20 @@ public:
     {
         iterator iter(node_);
         iter.set_end();
+        return iter;
+    }
+
+    reverse_iterator rbegin()
+    {
+        reverse_iterator iter(node_);
+        iter.set_rbegin();
+        return iter;
+    }
+
+    reverse_iterator rend()
+    {
+        reverse_iterator iter(node_);
+        iter.set_rend();
         return iter;
     }
 
