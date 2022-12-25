@@ -38,8 +38,7 @@ TEST(ObjTest, one_level_multi)
     EXPECT_EQ(data.dump(), R"({"test":1,"test1":2})");
 }
 
-// todo : overwrite
-// We forbid duplicate keys
+// We forbid duplicate keys in operator[] method
 // https://stackoverflow.com/questions/21832701/does-json-syntax-allow-duplicate-keys-in-an-object
 TEST(ObjTest, duplicate_key)
 {
@@ -47,7 +46,18 @@ TEST(ObjTest, duplicate_key)
     data["test"] = 1.0;
     data["test"] = 2;
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
-    EXPECT_EQ(data.dump(), R"({"test":1})");
+    EXPECT_EQ(data.dump(), R"({"test":2})");
+}
+
+// We allow duplicate keys in push_back method
+// A controversial topic, so we keep both rules
+TEST(ObjTest, duplicate_key_push_back)
+{
+    Json data;
+    data.push_back("test", 1.0);
+    data.push_back("test", 2);
+    EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
+    EXPECT_EQ(data.dump(), R"({"test":1,"test":2})");
 }
 
 TEST(ObjTest, multi_level)
@@ -111,6 +121,23 @@ TEST(ObjTest, clear)
     EXPECT_EQ(data.size(), 0);
     EXPECT_TRUE(data.empty());
     EXPECT_EQ(data.type(), JSON_VALUE_OBJECT);
+}
+
+TEST(ObjTest, update)
+{
+    Json data;
+    data["test1"] = false;
+    EXPECT_EQ(data["test1"].get<bool>(), false);
+    data["test1"] = true;
+    EXPECT_EQ(data["test1"].get<bool>(), true);
+    data["test1"] = 123;
+    EXPECT_EQ(data["test1"].get<int>(), 123);
+    data["test1"] = 11.0;
+    EXPECT_EQ(data["test1"].get<double>(), 11.0);
+    data["test1"] = "val";
+    EXPECT_EQ(data["test1"].get<std::string>(), "val");
+    data["test1"] = nullptr;
+    EXPECT_EQ(data["test1"].get<std::nullptr_t>(), nullptr);
 }
 
 int main(int argc, char** argv)

@@ -83,7 +83,7 @@ public:
     template <typename T>
     void operator=(const T& val)
     {
-        this->push_back(parent_key_, val);
+        this->push_back_internal(parent_key_, val);
     }
 
     bool has(const std::string& key) const;
@@ -182,11 +182,37 @@ public:
     {
         return *this;
     }
-
 public:
     // for object
-    template <typename T>
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
     void push_back(const std::string& key, const T& val)
+    {
+        if (!can_obj_push_back())
+        {
+            return;
+        }
+        json_object_t* obj = json_value_object(node_);
+        json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
+                           static_cast<double>(val));
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Object>::value ||
+                                          std::is_same<T, Array>::value,
+                                      bool>::type = true>
+    void push_back(const std::string& key, const T& val);
+
+    void push_back(const std::string& key, bool val);
+    void push_back(const std::string& key, std::nullptr_t val);
+    void push_back(const std::string& key, const std::string& val);
+    void push_back(const std::string& key, const char* val);
+    void push_back(const std::string& key, const Json& val);
+
+private:
+    // for object
+    template <typename T>
+    void push_back_internal(const std::string& key, const T& val)
     {
         if (!can_obj_push_back())
         {
@@ -228,9 +254,16 @@ public:
                                                   bool>::type = true>
     void normal_push_back(const std::string& key, const T& val)
     {
-        json_object_t* obj = json_value_object(node_);
-        json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
-                           static_cast<double>(val));
+        json_object_t* obj = json_value_object(parent_);
+        const json_value_t *find = json_object_find(key.c_str(), obj);
+        if (find == nullptr) {
+            json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
+                            static_cast<double>(val));
+            return;
+        }
+        json_object_insert_before(find, obj, key.c_str(), JSON_VALUE_NUMBER, static_cast<double>(val));
+        json_value_t *remove_val = json_object_remove(find, obj);
+        json_value_destroy(remove_val);
     }
 
     template <typename T,
@@ -245,6 +278,7 @@ public:
     void normal_push_back(const std::string& key, const char* val);
     void normal_push_back(const std::string& key, const Json& val);
 
+public:
     // for array
     template <typename T, typename std::enable_if<detail::is_number<T>::value,
                                                   bool>::type = true>
@@ -275,7 +309,8 @@ public:
     {
     public:
         friend class Json;
-        explicit IteratorBase(const json_value_t* val) : val_(val), json_(new Json)
+        explicit IteratorBase(const json_value_t* val)
+            : val_(val), json_(new Json)
         {
         }
 
@@ -437,7 +472,6 @@ public:
             }
         }
     };
-
 
     class reverse_iterator : public IteratorBase
     {
@@ -723,6 +757,22 @@ template <typename T,
           typename std::enable_if<std::is_same<T, Json::Object>::value ||
                                       std::is_same<T, Json::Array>::value,
                                   bool>::type>
+void Json::push_back(const std::string& key, const T& val)
+{
+    if (!can_obj_push_back())
+    {
+        return;
+    }
+    json_object_t* obj = json_value_object(node_);
+    Json copy_json = val.copy();
+    json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+}
+
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      std::is_same<T, Json::Array>::value,
+                                  bool>::type>
 void Json::placeholder_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(parent_);
@@ -738,10 +788,18 @@ template <typename T,
                                   bool>::type>
 void Json::normal_push_back(const std::string& key, const T& val)
 {
-    json_object_t* obj = json_value_object(node_);
+    json_object_t* obj = json_value_object(parent_);
+    const json_value_t *find = json_object_find(key.c_str(), obj);
     Json copy_json = val.copy();
-    json_object_append(obj, key.c_str(), 0, copy_json.node_);
+    if (find == nullptr) {
+        json_object_append(obj, key.c_str(), 0, copy_json.node_);
+        copy_json.node_ = nullptr;
+        return;
+    }
+    json_object_insert_before(find, obj, key.c_str(), 0, copy_json.node_);
     copy_json.node_ = nullptr;
+    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_destroy(remove_val);
 }
 
 template <typename T,
