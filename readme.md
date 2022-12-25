@@ -26,7 +26,7 @@ xmake run -g example
 
 To create a json object by reading a JSON file:
 
-You can use c++ file stream: 
+You can use c++ file stream:
 
 ```cpp
 #include "Json.h"
@@ -34,7 +34,7 @@ You can use c++ file stream:
 using namespace wfrest;
 
 std::ifstream f("example.json");
-Json data = Json::parse(f); 
+Json data = Json::parse(f);
 ```
 
 Or you can use `FILE*`
@@ -45,7 +45,7 @@ Json data = Json::parse(fp);
 fclose(fp);
 ```
 
-### Creating json objects from string 
+### Creating json objects from string
 
 Using (raw) string literals and json::parse
 
@@ -96,7 +96,7 @@ Json obj1 = Json::Object();
 Json arr1 = Json::Array();
 ```
 
-### Explict declare Json type 
+### Explict declare Json type
 
 If you want to be explicit or express the json type is array or object, the functions Json::Array and Json::Object will help:
 
@@ -111,7 +111,7 @@ Json empty_array_explicit = Json::Array();
 Json js = Json::parse(R"({"test1":false})");
 ```
 
-```cpp 
+```cpp
 Json data;
 data["key"]["chanchan"] = 1;
 
@@ -153,9 +153,9 @@ arr.push_back("answer");
 data.push_back(arr);
 ```
 
-- iterate the array 
+- iterate the array
 
-```cpp 
+```cpp
 for (Json::iterator it = data.begin(); it != data.end(); it++)
 {
     std::cout << it->value() << std::endl;
@@ -211,24 +211,33 @@ bool bool_false = data[5];
 // Object
 Json::Object obj;
 obj["123"] = 12;
-obj["123"] = "update";  // update method
 obj["123"]["1"] = "test";
 data.push_back(obj); // 6
 Json::Object obj1 = data[6].get<Json::Object>();
 // implicit conversion
 Json::Object obj2 = data[6];
 
-
-// Array 
+// Array
 Json::Array arr;
 arr.push_back(1);
 arr.push_back(nullptr);
-arr[1] = true;  // update method
 data.push_back(arr);
 
 Json::Array arr1 = data[7].get<Json::Array>();
 // implicit conversion
 Json::Array arr2 = data[7];
+```
+
+- Update element
+
+```cpp
+arr[1] = true;  // update method
+```
+
+- Erase element
+
+```cpp
+arr.erase(1);
 ```
 
 ### Example JSON objects
@@ -273,6 +282,19 @@ data["nothing"] = nullptr;
 
 // add an object inside the object
 data["answer"]["everything"] = 42;
+```
+
+- Update element
+
+```cpp
+data["key"] = 1;
+data["key"] = 2.0;
+```
+
+- Erase element
+
+```cpp
+data.erase("key");
 ```
 
 - iterate object elements
