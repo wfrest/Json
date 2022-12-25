@@ -172,6 +172,15 @@ for (const auto& it : data)
 }
 ```
 
+-iterate the array reversely
+
+```cpp
+for (Json::reverse_iterator it = data.rbegin(); it != data.rend(); it++)
+{
+  std::cout << it->value() << std::endl;
+}
+```
+
 - access by using operator[index]
 
 ```cpp
@@ -202,6 +211,7 @@ bool bool_false = data[5];
 // Object
 Json::Object obj;
 obj["123"] = 12;
+obj["123"] = "update";  // update method
 obj["123"]["1"] = "test";
 data.push_back(obj); // 6
 Json::Object obj1 = data[6].get<Json::Object>();
@@ -213,6 +223,7 @@ Json::Object obj2 = data[6];
 Json::Array arr;
 arr.push_back(1);
 arr.push_back(nullptr);
+arr[1] = true;  // update method
 data.push_back(arr);
 
 Json::Array arr1 = data[7].get<Json::Array>();
@@ -279,6 +290,15 @@ for (auto it = data.begin(); it != data.end(); it++)
 for (const auto& it : data)
 {
     std::cout << it.key() << " : " << it.value() << std::endl;
+}
+```
+
+- iterate object elements reversely
+
+```cpp
+for (Json::reverse_iterator it = data.rbegin(); it != data.rend(); it++)
+{
+  std::cout << it->key() << " : " << it->value() << std::endl;
 }
 ```
 
