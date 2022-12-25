@@ -27,6 +27,25 @@ TEST(ArrTest, arr_push)
     EXPECT_EQ(data.dump(), R"([1,null,"string",true,false])");
 }
 
+TEST(ArrTest, arr_update)
+{
+    Json data;
+    data.push_back(1);
+    data.push_back(nullptr);
+    data.push_back("string");
+    data.push_back(true);
+    data.push_back(false);
+    EXPECT_EQ(data.dump(), R"([1,null,"string",true,false])");
+    data[2] = 1;
+    EXPECT_EQ(data[2].get<int>(), 1);
+    data[2] = 2.0;
+    EXPECT_EQ(data[2].get<double>(), 2.0);
+    data[2] = "123";
+    EXPECT_EQ(data[2].get<std::string>(), "123");
+    data[2] = nullptr;
+    EXPECT_EQ(data[2].get<std::nullptr_t>(), nullptr);
+}
+
 TEST(ArrTest, arr_search)
 {
     Json data;

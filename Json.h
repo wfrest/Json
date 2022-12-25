@@ -83,7 +83,16 @@ public:
     template <typename T>
     void operator=(const T& val)
     {
-        this->push_back_internal(parent_key_, val);
+        if (parent_ == nullptr)
+            return;
+        if (json_value_type(parent_) == JSON_VALUE_ARRAY)
+        {
+            update_arr(val);
+        }
+        else if (json_value_type(parent_) == JSON_VALUE_OBJECT)
+        {
+            push_back_obj(parent_key_, val);
+        }
     }
 
     bool has(const std::string& key) const;
@@ -182,6 +191,7 @@ public:
     {
         return *this;
     }
+
 public:
     // for object
     template <typename T, typename std::enable_if<detail::is_number<T>::value,
@@ -212,7 +222,7 @@ public:
 private:
     // for object
     template <typename T>
-    void push_back_internal(const std::string& key, const T& val)
+    void push_back_obj(const std::string& key, const T& val)
     {
         if (!can_obj_push_back())
         {
@@ -255,14 +265,16 @@ private:
     void normal_push_back(const std::string& key, const T& val)
     {
         json_object_t* obj = json_value_object(parent_);
-        const json_value_t *find = json_object_find(key.c_str(), obj);
-        if (find == nullptr) {
+        const json_value_t* find = json_object_find(key.c_str(), obj);
+        if (find == nullptr)
+        {
             json_object_append(obj, key.c_str(), JSON_VALUE_NUMBER,
-                            static_cast<double>(val));
+                               static_cast<double>(val));
             return;
         }
-        json_object_insert_before(find, obj, key.c_str(), JSON_VALUE_NUMBER, static_cast<double>(val));
-        json_value_t *remove_val = json_object_remove(find, obj);
+        json_object_insert_before(find, obj, key.c_str(), JSON_VALUE_NUMBER,
+                                  static_cast<double>(val));
+        json_value_t* remove_val = json_object_remove(find, obj);
         json_value_destroy(remove_val);
     }
 
@@ -303,6 +315,30 @@ public:
     void push_back(const char* val);
     void push_back(std::nullptr_t val);
     void push_back(const Json& val);
+
+private:
+    template <typename T, typename std::enable_if<detail::is_number<T>::value,
+                                                  bool>::type = true>
+    void update_arr(T val)
+    {
+        json_array_t* arr = json_value_array(parent_);
+        json_array_insert_before(node_, arr, JSON_VALUE_NUMBER,
+                                 static_cast<double>(val));
+        json_value_t* remove_val = json_array_remove(node_, arr);
+        json_value_destroy(remove_val);
+    }
+
+    template <typename T,
+              typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                          std::is_same<T, Json::Array>::value,
+                                      bool>::type = true>
+    void update_arr(const T& val);
+
+    void update_arr(bool val);
+    void update_arr(const std::string& val);
+    void update_arr(const char* val);
+    void update_arr(std::nullptr_t val);
+    void update_arr(const Json& val);
 
 public:
     class IteratorBase
@@ -701,7 +737,7 @@ class Object_S : public Json
 public:
     Object_S()
     {
-        this->to_object();
+        to_object();
     }
     Object_S(const json_value_t* node, const json_value_t* parent)
         : Json(node, parent)
@@ -724,7 +760,7 @@ class Array_S : public Json
 public:
     Array_S()
     {
-        this->to_array();
+        to_array();
     }
 
     Array_S(const json_value_t* node, const json_value_t* parent)
@@ -789,16 +825,17 @@ template <typename T,
 void Json::normal_push_back(const std::string& key, const T& val)
 {
     json_object_t* obj = json_value_object(parent_);
-    const json_value_t *find = json_object_find(key.c_str(), obj);
+    const json_value_t* find = json_object_find(key.c_str(), obj);
     Json copy_json = val.copy();
-    if (find == nullptr) {
+    if (find == nullptr)
+    {
         json_object_append(obj, key.c_str(), 0, copy_json.node_);
         copy_json.node_ = nullptr;
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), 0, copy_json.node_);
     copy_json.node_ = nullptr;
-    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
@@ -816,6 +853,20 @@ void Json::push_back(const T& val)
     Json copy_json = val.copy();
     json_array_append(arr, 0, copy_json.node_);
     copy_json.node_ = nullptr;
+}
+
+template <typename T,
+          typename std::enable_if<std::is_same<T, Json::Object>::value ||
+                                      ::std::is_same<T, Json::Array>::value,
+                                  bool>::type>
+void Json::update_arr(const T& val)
+{
+    json_array_t* arr = json_value_array(parent_);
+    Json copy_json = val.copy();
+    json_array_insert_before(node_, arr, 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+    json_value_t* remove_val = json_array_remove(node_, arr);
+    json_value_destroy(remove_val);
 }
 
 } // namespace wfrest

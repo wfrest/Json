@@ -242,7 +242,7 @@ Json Json::operator[](const char* key)
     if (is_null() && is_root())
     {
         // todo : need is_root here?
-        this->to_object();
+        to_object();
     }
     else if (is_object())
     {
@@ -304,8 +304,7 @@ bool Json::has(const std::string& key) const
 
 Json Json::operator[](int index)
 {
-    // duplicate temporarily
-    if (!this->is_array() || index < 0)
+    if (!is_array() || index < 0)
     {
         return Json(Empty());
     }
@@ -324,7 +323,7 @@ Json Json::operator[](int index)
 
 Json Json::operator[](int index) const
 {
-    if (!this->is_array() || index < 0)
+    if (!is_array() || index < 0)
     {
         return Json(Empty());
     }
@@ -354,7 +353,7 @@ bool Json::can_obj_push_back()
     }
     if (is_root() && is_null())
     {
-        this->to_object();
+        to_object();
     }
     return is_object();
 }
@@ -379,7 +378,6 @@ void Json::push_back(const std::string& key, std::nullptr_t val)
     json_object_t* obj = json_value_object(node_);
     json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
 }
-
 
 void Json::push_back(const std::string& key, const std::string& val)
 {
@@ -453,27 +451,29 @@ void Json::placeholder_push_back(const std::string& key, const Json& val)
 void Json::normal_push_back(const std::string& key, bool val)
 {
     json_object_t* obj = json_value_object(parent_);
-    const json_value_t *find = json_object_find(key.c_str(), obj);
+    const json_value_t* find = json_object_find(key.c_str(), obj);
     int type = val ? JSON_VALUE_TRUE : JSON_VALUE_FALSE;
-    if (find == nullptr) {
+    if (find == nullptr)
+    {
         json_object_append(obj, key.c_str(), type);
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), type);
-    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
 void Json::normal_push_back(const std::string& key, std::nullptr_t val)
 {
     json_object_t* obj = json_value_object(parent_);
-    const json_value_t *find = json_object_find(key.c_str(), obj);
-    if (find == nullptr) {
+    const json_value_t* find = json_object_find(key.c_str(), obj);
+    if (find == nullptr)
+    {
         json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), JSON_VALUE_NULL);
-    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
@@ -485,29 +485,31 @@ void Json::normal_push_back(const std::string& key, const std::string& val)
 void Json::normal_push_back(const std::string& key, const char* val)
 {
     json_object_t* obj = json_value_object(parent_);
-    const json_value_t *find = json_object_find(key.c_str(), obj);
-    if (find == nullptr) {
+    const json_value_t* find = json_object_find(key.c_str(), obj);
+    if (find == nullptr)
+    {
         json_object_append(obj, key.c_str(), JSON_VALUE_STRING, val);
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), JSON_VALUE_STRING, val);
-    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
 void Json::normal_push_back(const std::string& key, const Json& val)
 {
     json_object_t* obj = json_value_object(parent_);
-    const json_value_t *find = json_object_find(key.c_str(), obj);
+    const json_value_t* find = json_object_find(key.c_str(), obj);
     Json copy_json = val.copy();
-    if (find == nullptr) {
+    if (find == nullptr)
+    {
         json_object_append(obj, key.c_str(), 0, copy_json.node_);
         copy_json.node_ = nullptr;
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), 0, copy_json.node_);
     copy_json.node_ = nullptr;
-    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
@@ -532,24 +534,13 @@ void Json::push_back(bool val)
         return;
     }
     json_array_t* arr = json_value_array(node_);
-    if (val)
-    {
-        json_array_append(arr, JSON_VALUE_TRUE);
-    }
-    else
-    {
-        json_array_append(arr, JSON_VALUE_FALSE);
-    }
+    int type = val ? JSON_VALUE_TRUE : JSON_VALUE_FALSE;
+    json_array_append(arr, type);
 }
 
 void Json::push_back(const std::string& val)
 {
-    if (!can_arr_push_back())
-    {
-        return;
-    }
-    json_array_t* arr = json_value_array(node_);
-    json_array_append(arr, JSON_VALUE_STRING, val.c_str());
+    push_back(val.c_str());
 }
 
 void Json::push_back(const char* val)
@@ -582,6 +573,46 @@ void Json::push_back(const Json& val)
     Json copy_json = val.copy();
     json_array_append(arr, 0, copy_json.node_);
     copy_json.node_ = nullptr;
+}
+
+void Json::update_arr(bool val)
+{
+    json_array_t* arr = json_value_array(parent_);
+    int type = val ? JSON_VALUE_TRUE : JSON_VALUE_FALSE;
+    json_array_insert_before(node_, arr, type);
+    json_value_t* remove_val = json_array_remove(node_, arr);
+    json_value_destroy(remove_val);
+}
+
+void Json::update_arr(const std::string& val)
+{
+    update_arr(val.c_str());
+}
+
+void Json::update_arr(const char* val)
+{
+    json_array_t* arr = json_value_array(parent_);
+    json_array_insert_before(node_, arr, JSON_VALUE_STRING, val);
+    json_value_t* remove_val = json_array_remove(node_, arr);
+    json_value_destroy(remove_val);
+}
+
+void Json::update_arr(std::nullptr_t val)
+{
+    json_array_t* arr = json_value_array(parent_);
+    json_array_insert_before(node_, arr, JSON_VALUE_NULL);
+    json_value_t* remove_val = json_array_remove(node_, arr);
+    json_value_destroy(remove_val);
+}
+
+void Json::update_arr(const Json& val)
+{
+    json_array_t* arr = json_value_array(parent_);
+    Json copy_json = val.copy();
+    json_array_insert_before(node_, arr, 0, copy_json.node_);
+    copy_json.node_ = nullptr;
+    json_value_t* remove_val = json_array_remove(node_, arr);
+    json_value_destroy(remove_val);
 }
 
 std::string Json::type_str() const
