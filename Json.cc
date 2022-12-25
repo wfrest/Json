@@ -220,12 +220,12 @@ Json Json::parse(FILE* fp)
     return Json(buffer, true);
 }
 
-const std::string Json::dump() const
+std::string Json::dump() const
 {
     return dump(0);
 }
 
-const std::string Json::dump(int spaces) const
+std::string Json::dump(int spaces) const
 {
     std::string str;
     str.reserve(64);
@@ -304,11 +304,13 @@ bool Json::has(const std::string& key) const
 
 void Json::erase(const std::string& key)
 {
-    if (!is_object()) return;
+    if (!is_object())
+        return;
     json_object_t* obj = json_value_object(node_);
     const json_value_t* find = json_object_find(key.c_str(), obj);
-    if (find == nullptr) return;
-    json_value_t *remove_val = json_object_remove(find, obj);
+    if (find == nullptr)
+        return;
+    json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
 
@@ -333,14 +335,17 @@ Json Json::operator[](int index)
 
 void Json::erase(int index)
 {
-    if (!is_array()) return;
+    if (!is_array())
+        return;
     int cnt = 0;
-    json_array_t *arr = json_value_array(node_);
-    const json_value_t *arr_cursor = nullptr;
-    json_array_for_each(arr_cursor, arr) {
-        if (cnt++ == index) break;
+    json_array_t* arr = json_value_array(node_);
+    const json_value_t* arr_cursor = nullptr;
+    json_array_for_each(arr_cursor, arr)
+    {
+        if (cnt++ == index)
+            break;
     }
-    json_value_t *remove_val = json_array_remove(arr_cursor, arr);
+    json_value_t* remove_val = json_array_remove(arr_cursor, arr);
     json_value_destroy(remove_val);
 }
 

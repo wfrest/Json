@@ -64,8 +64,8 @@ public:
     static Json parse(const std::ifstream& stream);
     static Json parse(FILE* fp);
 
-    const std::string dump() const;
-    const std::string dump(int spaces) const;
+    std::string dump() const;
+    std::string dump(int spaces) const;
 
     // for correctness in clang
     Json operator[](const char* key);
