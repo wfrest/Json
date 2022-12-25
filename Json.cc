@@ -298,13 +298,23 @@ Json Json::operator[](const std::string& key) const
 bool Json::has(const std::string& key) const
 {
     json_object_t* obj = json_value_object(node_);
-    const json_value_t* res = json_object_find(key.c_str(), obj);
-    return res != nullptr;
+    const json_value_t* find = json_object_find(key.c_str(), obj);
+    return find != nullptr;
+}
+
+void Json::erase(const std::string& key)
+{
+    if (!is_object()) return;
+    json_object_t* obj = json_value_object(node_);
+    const json_value_t* find = json_object_find(key.c_str(), obj);
+    if (find == nullptr) return;
+    json_value_t *remove_val = json_object_remove(find, obj);
+    json_value_destroy(remove_val);
 }
 
 Json Json::operator[](int index)
 {
-    if (!is_array() || index < 0)
+    if (!is_array() || index < 0 || index > this->size())
     {
         return Json(Empty());
     }
@@ -321,9 +331,22 @@ Json Json::operator[](int index)
     return Json(Empty());
 }
 
+void Json::erase(int index)
+{
+    if (!is_array()) return;
+    int cnt = 0;
+    json_array_t *arr = json_value_array(node_);
+    const json_value_t *arr_cursor = nullptr;
+    json_array_for_each(arr_cursor, arr) {
+        if (cnt++ == index) break;
+    }
+    json_value_t *remove_val = json_array_remove(arr_cursor, arr);
+    json_value_destroy(remove_val);
+}
+
 Json Json::operator[](int index) const
 {
-    if (!is_array() || index < 0)
+    if (!is_array() || index < 0 || index > this->size())
     {
         return Json(Empty());
     }

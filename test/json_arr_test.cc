@@ -107,6 +107,19 @@ TEST(ArrTest, arr_search)
     EXPECT_EQ(h.dump(), R"([1,null])");
 }
 
+TEST(ArrTest, erase)
+{
+    Json data;
+    data.push_back(1);
+    data.push_back(nullptr);
+    data.push_back("string");
+    data.push_back(true);
+    data.push_back(false);
+    EXPECT_EQ(data.dump(), R"([1,null,"string",true,false])");
+    data.erase(2);
+    EXPECT_EQ(data.dump(), R"([1,null,true,false])");
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

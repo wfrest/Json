@@ -140,6 +140,19 @@ TEST(ObjTest, update)
     EXPECT_EQ(data["test1"].get<std::nullptr_t>(), nullptr);
 }
 
+TEST(ObjTest, erase)
+{
+    Json data;
+    data["test1"] = false;
+    data["test2"] = true;
+    data["test3"] = "string";
+    data["test4"] = nullptr;
+    EXPECT_EQ(data.dump(),
+              R"({"test1":false,"test2":true,"test3":"string","test4":null})");
+    data.erase("test2");
+    EXPECT_EQ(data.dump(), R"({"test1":false,"test3":"string","test4":null})");
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
