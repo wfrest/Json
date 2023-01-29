@@ -54,6 +54,13 @@ TEST(JsonTest, const_operator)
     EXPECT_EQ(js["test3"].get<std::string>(), "string");
 }
 
+TEST(JsonTest, invalid_parse)
+{
+    const Json js = Json::parse(
+        R"({"test1":false,"test2":true,"test3":"string","test4":null)");
+    EXPECT_FALSE(js.is_valid());
+}
+
 TEST(JsonTest, create)
 {
     Json data = Json::Object{
