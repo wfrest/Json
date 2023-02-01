@@ -1,5 +1,8 @@
 ## Fast 🚀, efficient ⌛️, and easiest 💥 C++ Json library
 
+[<img align="left" width="390" alt="json logo" src="/resource/logo.png">](#)
+
+
 ## Build instructions
 
 Build the library
