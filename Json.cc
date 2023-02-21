@@ -209,14 +209,18 @@ Json Json::parse(FILE* fp)
 {
     if (fp == nullptr)
     {
-        return Json();
+        return Json(Empty());
     }
     fseek(fp, 0, SEEK_END);
     long length = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     char* buffer = (char*)malloc(length + 1);
     buffer[length] = '\0';
-    fread(buffer, 1, length, fp);
+    size_t ret = fread(buffer, 1, length, fp);
+    if (ret != length)
+    {
+        return Json(Empty());
+    }
     return Json(buffer, true);
 }
 
