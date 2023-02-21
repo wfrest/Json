@@ -209,31 +209,19 @@ Json Json::parse(FILE* fp)
 {
     if (fp == nullptr)
     {
-        return Json();
+        return Json(Empty());
     }
     fseek(fp, 0, SEEK_END);
     long length = ftell(fp);
     fseek(fp, 0, SEEK_SET);
     char* buffer = (char*)malloc(length + 1);
     buffer[length] = '\0';
-    size_t ret_code = fread(buffer, 1, length, fp);
-    if (ret_code == length)
+    size_t ret = fread(buffer, 1, length, fp);
+    if (ret != length)
     {
-        return Json(buffer, true);
+        return Json(Empty());
     }
-    else
-    {
-        if (feof(fp))
-        {
-            fprintf(stderr,
-                    "Error reading json file: unexpected end of file\n");
-        }
-        else if (ferror(fp))
-        {
-            perror("Error reading jspn file");
-        }
-    }
-    return Json(Empty());
+    return Json(buffer, true);
 }
 
 std::string Json::dump() const
