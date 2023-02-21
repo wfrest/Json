@@ -216,8 +216,24 @@ Json Json::parse(FILE* fp)
     fseek(fp, 0, SEEK_SET);
     char* buffer = (char*)malloc(length + 1);
     buffer[length] = '\0';
-    fread(buffer, 1, length, fp);
-    return Json(buffer, true);
+    size_t ret_code = fread(buffer, 1, length, fp);
+    if (ret_code == length)
+    {
+        return Json(buffer, true);
+    }
+    else
+    {
+        if (feof(fp))
+        {
+            fprintf(stderr,
+                    "Error reading json file: unexpected end of file\n");
+        }
+        else if (ferror(fp))
+        {
+            perror("Error reading jspn file");
+        }
+    }
+    return Json(Empty());
 }
 
 std::string Json::dump() const
