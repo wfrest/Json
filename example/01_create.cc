@@ -36,6 +36,20 @@ void create_by_string()
     std::cout << data << std::endl;
 }
 
+void create_by_empty_string()
+{
+    Json data = Json::parse("");
+    if (data.is_valid())
+    {
+        std::cout << "valid" << std::endl;
+    }
+    else
+    {
+        std::cout << "invalid" << std::endl;
+    }
+    std::cout << data << std::endl;
+}
+
 void create_by_initailizer()
 {
     Json data = Json::Object{
@@ -70,4 +84,7 @@ int main()
 
     std::cout << "create by initializer list" << std::endl;
     create_by_initailizer();
+
+    std::cout << "create by empty string" << std::endl;
+    create_by_empty_string();
 }

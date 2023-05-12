@@ -56,8 +56,15 @@ Json::Json() : node_(json_value_create(JSON_VALUE_NULL))
 }
 
 Json::Json(const std::string& str, bool parse_flag)
-    : node_(json_value_parse(str.c_str()))
 {
+    if (str.empty())
+    {
+        node_ = json_value_create(JSON_VALUE_STRING, "");
+    }
+    else
+    {
+        node_ = json_value_parse(str.c_str());
+    }
 }
 
 Json::Json(const std::string& str)

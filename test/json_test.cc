@@ -61,6 +61,12 @@ TEST(JsonTest, invalid_parse)
     EXPECT_FALSE(js.is_valid());
 }
 
+TEST(JsonTest, parse_empty)
+{
+    const Json js = Json::parse("");
+    EXPECT_TRUE(js.is_valid());
+}
+
 TEST(JsonTest, create)
 {
     Json data = Json::Object{
