@@ -166,6 +166,21 @@ Json::Json(const Empty&)
 {
 }
 
+Json::Json(const Json& other)
+{
+    node_ = json_value_copy(other.node_);
+}
+
+Json& Json::operator=(const Json& other)
+{
+    if (this != &other)
+    {
+        destroy_node(node_);
+        node_ = json_value_copy(other.node_);
+    }
+    return *this;
+}
+
 Json::Json(Json&& other)
     : node_(other.node_), parent_(other.parent_),
       parent_key_(std::move(other.parent_key_)), allocated_(other.allocated_)
@@ -261,7 +276,7 @@ Json Json::operator[](const char* key)
         const json_value_t* res = json_object_find(key, obj);
         if (res != nullptr)
         {
-            return Json(res, node_, key);
+            return Json(res, node_, std::string(key));
         }
     }
     if (is_placeholder())
@@ -439,7 +454,7 @@ void Json::push_back(const std::string& key, const Json& val)
         return;
     }
     json_object_t* obj = json_value_object(node_);
-    Json copy_json = val.copy();
+    Json copy_json = val;
     json_object_append(obj, key.c_str(), 0, copy_json.node_);
     copy_json.node_ = nullptr;
 }
@@ -481,7 +496,7 @@ void Json::placeholder_push_back(const std::string& key, const Json& val)
 {
     json_object_t* obj = json_value_object(parent_);
     destroy_node(node_);
-    Json copy_json = val.copy();
+    Json copy_json = val;
     node_ = json_object_append(obj, key.c_str(), 0, copy_json.node_);
     copy_json.node_ = nullptr;
 }
@@ -538,7 +553,7 @@ void Json::normal_push_back(const std::string& key, const Json& val)
 {
     json_object_t* obj = json_value_object(parent_);
     const json_value_t* find = json_object_find(key.c_str(), obj);
-    Json copy_json = val.copy();
+    Json copy_json = val;
     if (find == nullptr)
     {
         json_object_append(obj, key.c_str(), 0, copy_json.node_);
@@ -562,7 +577,7 @@ bool Json::can_arr_push_back()
 
 Json Json::copy() const
 {
-    return Json(json_value_copy(node_), nullptr);
+    return *this;
 }
 
 void Json::push_back(bool val)
@@ -608,7 +623,7 @@ void Json::push_back(const Json& val)
         return;
     }
     json_array_t* arr = json_value_array(node_);
-    Json copy_json = val.copy();
+    Json copy_json = val;
     json_array_append(arr, 0, copy_json.node_);
     copy_json.node_ = nullptr;
 }
@@ -646,7 +661,7 @@ void Json::update_arr(std::nullptr_t val)
 void Json::update_arr(const Json& val)
 {
     json_array_t* arr = json_value_array(parent_);
-    Json copy_json = val.copy();
+    Json copy_json = val;
     json_array_insert_before(node_, arr, 0, copy_json.node_);
     copy_json.node_ = nullptr;
     json_value_t* remove_val = json_array_remove(node_, arr);
