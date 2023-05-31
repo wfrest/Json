@@ -99,10 +99,10 @@ TEST(JsonTest, copy)
     Json data;
     data["key"] = 1;
     data["name"] = "chanchan";
-    std::cout << data << std::endl;
 
     Json data1 = data.copy();
-    std::cout << data1 << std::endl;
+
+    // EXPECT_EQ(data, data1);
 }
 
 int main(int argc, char** argv)

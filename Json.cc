@@ -51,142 +51,138 @@ json_value_t* json_value_copy(const json_value_t* val)
 
 } // namespace
 
-Json::Json() : node_(json_value_create(JSON_VALUE_NULL))
-{
-}
-
-Json::Json(const std::string& str, bool parse_flag)
-    : node_(json_value_parse(str.c_str()))
+// ------------------------ Constructor -------------------------
+Json::Json()
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(nullptr),
+      allocated_(true)
 {
 }
 
 Json::Json(const std::string& str)
-    : node_(json_value_create(JSON_VALUE_STRING, str.c_str()))
+    : node_(json_value_create(JSON_VALUE_STRING, str.c_str())),
+      parent_(nullptr), allocated_(true)
 {
 }
 
-Json::Json(const char* str) : node_(json_value_create(JSON_VALUE_STRING, str))
+Json::Json(const char* str)
+    : node_(json_value_create(JSON_VALUE_STRING, str)), parent_(nullptr),
+      allocated_(true)
 {
 }
 
-Json::Json(std::nullptr_t null) : node_(json_value_create(JSON_VALUE_NULL))
+Json::Json(std::nullptr_t null)
+    : node_(json_value_create(JSON_VALUE_NULL)), parent_(nullptr),
+      allocated_(true)
 {
 }
 
-Json::Json(double val) : node_(json_value_create(JSON_VALUE_NUMBER, val))
+Json::Json(double val)
+    : node_(json_value_create(JSON_VALUE_NUMBER, val)), parent_(nullptr),
+      allocated_(true)
 {
 }
 
 Json::Json(int val)
-    : node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val)))
+    : node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val))),
+      parent_(nullptr), allocated_(true)
 {
 }
 
 Json::Json(bool val)
     : node_(val ? json_value_create(JSON_VALUE_TRUE)
-                : json_value_create(JSON_VALUE_FALSE))
+                : json_value_create(JSON_VALUE_FALSE)),
+      parent_(nullptr), allocated_(true)
 {
 }
 
-// todo : optimize
-Json::Json(const Array& val)
-    : node_(json_value_copy(val.node_)), parent_(val.parent_),
-      parent_key_(val.parent_key_)
+// for parse
+Json::Json(const std::string& str, bool parse_flag) : parent_(nullptr)
 {
-}
-
-Json::Json(const Object& val)
-    : node_(json_value_copy(val.node_)), parent_(val.parent_),
-      parent_key_(val.parent_key_)
-{
-}
-
-Json::Json(Array&& val)
-    : node_(val.node_), parent_(val.parent_),
-      parent_key_(std::move(val.parent_key_))
-{
-    val.node_ = nullptr;
-    val.parent_ = nullptr;
-}
-
-Json::Json(Object&& val)
-    : node_(val.node_), parent_(val.parent_),
-      parent_key_(std::move(val.parent_key_))
-{
-    val.node_ = nullptr;
-    val.parent_ = nullptr;
+    node_ = json_value_parse(str.c_str());
+    allocated_ = node_ == nullptr ? false : true;
 }
 
 Json::~Json()
 {
-    if (allocated_)
-    {
-        destroy_node(node_);
-    }
+    destroy_node(node_);
 }
 
 // watcher constructor
-Json::Json(const json_value_t* parent, std::string&& key)
-    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
-      parent_key_(std::move(key)), allocated_(false)
-{
-}
-
-Json::Json(const json_value_t* parent, const std::string& key)
-    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
-      parent_key_(key), allocated_(false)
-{
-}
-
-Json::Json(const json_value_t* parent)
-    : node_(json_value_create(JSON_VALUE_NULL)), parent_(parent),
-      allocated_(false)
-{
-}
-
-Json::Json(const json_value_t* node, const json_value_t* parent)
-    : node_(node), parent_(parent), allocated_(false)
-{
-}
-
 Json::Json(const json_value_t* node, const json_value_t* parent,
            std::string&& key)
-    : node_(node), parent_(parent), parent_key_(std::move(key)),
-      allocated_(false)
+    : node_(node == nullptr ? json_value_create(JSON_VALUE_NULL) : node),
+      parent_(parent), allocated_(false), parent_key_(std::move(key))
 {
 }
 
 Json::Json(const json_value_t* node, const json_value_t* parent,
            const std::string& key)
-    : node_(node), parent_(parent), parent_key_(key), allocated_(false)
+    : node_(node == nullptr ? json_value_create(JSON_VALUE_NULL) : node),
+      parent_(parent), allocated_(false), parent_key_(key)
 {
 }
 
-Json::Json(const Empty&)
+Json::Json(JsonType type) : allocated_(true)
 {
+    if (type == JsonType::Object)
+    {
+        node_ = json_value_create(JSON_VALUE_OBJECT);
+    }
+    else
+    {
+        node_ = json_value_create(JSON_VALUE_ARRAY);
+    }
 }
-
 Json::Json(const Json& other)
 {
-    node_ = json_value_copy(other.node_);
+    if (other.allocated_)
+    {
+        node_ = json_value_copy(other.node_);
+        allocated_ = true;
+    }
+    else
+    {
+        // watcher mode
+        node_ = other.node_;
+        parent_ = other.parent_;
+        allocated_ = false;
+        parent_key_ = other.parent_key_;
+    }
 }
 
 Json& Json::operator=(const Json& other)
 {
-    if (this != &other)
+    if (this == &other)
     {
-        destroy_node(node_);
-        node_ = json_value_copy(other.node_);
+        return *this;
     }
+    destroy_node(node_);
+    if (other.allocated_)
+    {
+        node_ = json_value_copy(other.node_);
+        parent_ = nullptr;
+        allocated_ = true;
+        parent_key_.clear();
+    }
+    else
+    {
+        // watcher mode
+        node_ = other.node_;
+        parent_ = other.parent_;
+        allocated_ = false;
+        parent_key_ = other.parent_key_;
+    }
+
     return *this;
 }
 
 Json::Json(Json&& other)
-    : node_(other.node_), parent_(other.parent_),
-      parent_key_(std::move(other.parent_key_)), allocated_(other.allocated_)
+    : node_(other.node_), parent_(other.parent_), allocated_(other.allocated_),
+      parent_key_(std::move(other.parent_key_))
 {
     other.node_ = nullptr;
     other.parent_ = nullptr;
+    other.allocated_ = false;
 }
 
 Json& Json::operator=(Json&& other)
@@ -195,16 +191,14 @@ Json& Json::operator=(Json&& other)
     {
         return *this;
     }
-    if (allocated_)
-    {
-        destroy_node(node_);
-    }
+    destroy_node(node_);
     node_ = other.node_;
     other.node_ = nullptr;
     parent_ = other.parent_;
     other.parent_ = nullptr;
-    parent_key_ = std::move(other.parent_key_);
     allocated_ = other.allocated_;
+    other.allocated_ = false;
+    parent_key_ = std::move(other.parent_key_);
     return *this;
 }
 
@@ -224,7 +218,7 @@ Json Json::parse(FILE* fp)
 {
     if (fp == nullptr)
     {
-        return Json(Empty());
+        return Json();
     }
     fseek(fp, 0, SEEK_END);
     long length = ftell(fp);
@@ -235,7 +229,7 @@ Json Json::parse(FILE* fp)
     Json js;
     if (ret != length)
     {
-        js = Json(Empty());
+        js = Json();
     }
     else
     {
@@ -260,10 +254,6 @@ std::string Json::dump(int spaces) const
 
 Json Json::operator[](const char* key)
 {
-    if (!is_valid())
-    {
-        return Json(Empty());
-    }
     if (is_null() && is_root())
     {
         // todo : need is_root here?
@@ -288,26 +278,26 @@ Json Json::operator[](const char* key)
     }
     if (!is_object())
     {
-        return Json(Empty());
+        return Json();
     }
     // (null, parent(node_), key)
-    return Json(node_, key);
+    return Json(nullptr, node_, key);
 }
 
 Json Json::operator[](const char* key) const
 {
-    if (!is_valid() || !is_object())
+    if (!is_object())
     {
-        return Json(Empty());
+        return Json();
     }
     const json_value_t* val = node_;
     json_object_t* obj = json_value_object(val);
     const json_value_t* res = json_object_find(key, obj);
     if (res != nullptr)
     {
-        return Json(res, node_);
+        return Json(res, node_, "");
     }
-    return Json(Empty());
+    return Json();
 }
 
 Json Json::operator[](const std::string& key)
@@ -343,7 +333,7 @@ Json Json::operator[](int index)
 {
     if (!is_array() || index < 0 || index > this->size())
     {
-        return Json(Empty());
+        return Json();
     }
     const json_value_t* val;
     json_array_t* arr = json_value_array(node_);
@@ -351,11 +341,11 @@ Json Json::operator[](int index)
     {
         if (index == 0)
         {
-            return Json(val, node_);
+            return Json(val, node_, "");
         }
         index--;
     }
-    return Json(Empty());
+    return Json();
 }
 
 void Json::erase(int index)
@@ -378,7 +368,7 @@ Json Json::operator[](int index) const
 {
     if (!is_array() || index < 0 || index > this->size())
     {
-        return Json(Empty());
+        return Json();
     }
     const json_value_t* val;
     json_array_t* arr = json_value_array(node_);
@@ -386,19 +376,15 @@ Json Json::operator[](int index) const
     {
         if (index == 0)
         {
-            return Json(val, node_);
+            return Json(val, node_, "");
         }
         index--;
     }
-    return Json(Empty());
+    return Json();
 }
 
 bool Json::can_obj_push_back()
 {
-    if (is_incomplete())
-    {
-        return false;
-    }
     if (is_placeholder() ||
         (parent_ != nullptr && json_value_type(parent_) == JSON_VALUE_OBJECT))
     {
@@ -456,7 +442,7 @@ void Json::push_back(const std::string& key, const Json& val)
     json_object_t* obj = json_value_object(node_);
     Json copy_json = val;
     json_object_append(obj, key.c_str(), 0, copy_json.node_);
-    copy_json.node_ = nullptr;
+    copy_json.reset();
 }
 
 void Json::placeholder_push_back(const std::string& key, bool val)
@@ -498,7 +484,7 @@ void Json::placeholder_push_back(const std::string& key, const Json& val)
     destroy_node(node_);
     Json copy_json = val;
     node_ = json_object_append(obj, key.c_str(), 0, copy_json.node_);
-    copy_json.node_ = nullptr;
+    copy_json.reset();
 }
 
 void Json::normal_push_back(const std::string& key, bool val)
@@ -561,7 +547,7 @@ void Json::normal_push_back(const std::string& key, const Json& val)
         return;
     }
     json_object_insert_before(find, obj, key.c_str(), 0, copy_json.node_);
-    copy_json.node_ = nullptr;
+    copy_json.reset();
     json_value_t* remove_val = json_object_remove(find, obj);
     json_value_destroy(remove_val);
 }
@@ -625,7 +611,7 @@ void Json::push_back(const Json& val)
     json_array_t* arr = json_value_array(node_);
     Json copy_json = val;
     json_array_append(arr, 0, copy_json.node_);
-    copy_json.node_ = nullptr;
+    copy_json.reset();
 }
 
 void Json::update_arr(bool val)
@@ -663,7 +649,7 @@ void Json::update_arr(const Json& val)
     json_array_t* arr = json_value_array(parent_);
     Json copy_json = val;
     json_array_insert_before(node_, arr, 0, copy_json.node_);
-    copy_json.node_ = nullptr;
+    copy_json.reset();
     json_value_t* remove_val = json_array_remove(node_, arr);
     json_value_destroy(remove_val);
 }
@@ -727,29 +713,48 @@ bool Json::empty() const
 
 void Json::clear()
 {
-    if (allocated_)
+    int type = json_value_type(node_);
+    destroy_node(node_);
+    parent_ = nullptr;
+    allocated_ = true;
+    parent_key_.clear();
+    if (type == JSON_VALUE_STRING)
     {
-        destroy_node(node_);
-        node_ = json_value_create(JSON_VALUE_OBJECT);
+        node_ = json_value_create(JSON_VALUE_STRING, "");
+    }
+    else if (type == JSON_VALUE_NUMBER)
+    {
+
+        node_ = json_value_create(JSON_VALUE_NUMBER, 0);
+    }
+    else
+    {
+        node_ = json_value_create(type);
     }
 }
 
-void Json::to_object()
+bool Json::to_object()
 {
-    if (allocated_ && is_null())
+    if (!allocated_ || !is_null())
     {
-        destroy_node(node_);
-        node_ = json_value_create(JSON_VALUE_OBJECT);
+        // watcher and non-null type can't change type
+        return false;
     }
+    destroy_node(node_);
+    node_ = json_value_create(JSON_VALUE_OBJECT);
+    return true;
 }
 
-void Json::to_array()
+bool Json::to_array()
 {
-    if (allocated_ && is_null())
+    if (!allocated_ || !is_null())
     {
-        destroy_node(node_);
-        node_ = json_value_create(JSON_VALUE_ARRAY);
+        // watcher and non-null type can't change type
+        return false;
     }
+    destroy_node(node_);
+    node_ = json_value_create(JSON_VALUE_ARRAY);
+    return true;
 }
 
 void Json::value_convert(const json_value_t* val, int spaces, int depth,
