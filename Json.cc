@@ -725,7 +725,7 @@ void Json::clear()
     else if (type == JSON_VALUE_NUMBER)
     {
 
-        node_ = json_value_create(JSON_VALUE_NUMBER, 0);
+        node_ = json_value_create(JSON_VALUE_NUMBER, 0.0);
     }
     else
     {
