@@ -3,16 +3,7 @@ set_languages("c99", "c++11")
 
 set_version("0.9.0")
 
-if is_mode("debug") then
-    set_symbols("debug")
-    set_optimize("none")
-end
-
-if is_mode("release") then
-    set_symbols("hidden")
-    set_optimize("fastest")
-    set_strip("all")
-end
+add_rules("mode.release", "mode.debug", "mode.check")
 
 add_includedirs("$(projectdir)")
 

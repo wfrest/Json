@@ -110,15 +110,14 @@ Json::~Json()
 // watcher constructor
 Json::Json(const json_value_t* node, const json_value_t* parent,
            std::string&& key)
-    : node_(node == nullptr ? json_value_create(JSON_VALUE_NULL) : node),
-      parent_(parent), allocated_(false), parent_key_(std::move(key))
+    : node_(node), parent_(parent), allocated_(false),
+      parent_key_(std::move(key))
 {
 }
 
 Json::Json(const json_value_t* node, const json_value_t* parent,
            const std::string& key)
-    : node_(node == nullptr ? json_value_create(JSON_VALUE_NULL) : node),
-      parent_(parent), allocated_(false), parent_key_(key)
+    : node_(node), parent_(parent), allocated_(false), parent_key_(key)
 {
 }
 
@@ -281,7 +280,9 @@ Json Json::operator[](const char* key)
         return Json();
     }
     // (null, parent(node_), key)
-    return Json(nullptr, node_, key);
+    Json js = Json();
+    js.set_parent(node_, std::string(key));
+    return js;
 }
 
 Json Json::operator[](const char* key) const
