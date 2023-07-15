@@ -16,5 +16,5 @@ target("Json")
         os.rm("$(buildir)")
     end)
 
-includes("test", "example")
+includes("test", "example", "bench")
 
