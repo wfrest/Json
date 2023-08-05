@@ -644,6 +644,13 @@ void Json::push_back(const std::string& val)
 {
     push_back(val.c_str());
 }
+void Json::push_back(const std::vector<std::string>& val)
+{
+    for (const auto& str : val)
+    {
+        push_back(str.c_str());
+    }
+}
 
 void Json::push_back(const char* val)
 {
