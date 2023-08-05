@@ -1,0 +1,42 @@
+name: CMake
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: build-windows
+    runs-on: windows-latest
+
+    steps:
+    - name: install dependencies
+      run: |
+        choco install -y visualstudio2019buildtools visualstudio2019-workload-vctools
+        choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+
+    - name: setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+
+    - name: pull code
+      uses: actions/checkout@v2
+
+    - name: download packages
+      run: |
+        xmake require -y
+
+    - name: build
+      run: |
+        xmake f --toolchain=msvc --vs="C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat" --arch=x86_64 --plat=windows --verbose
+        xmake -r
+        xmake build -rg test
+        xmake build -rg example
+
+    - name : run test
+      run: |
+        xmake run -g test
+        xmake run -g example
