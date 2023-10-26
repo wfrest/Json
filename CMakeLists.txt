@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE "Debug")
 
@@ -27,7 +26,7 @@ add_library(
   STATIC
   ${PROJECT_SOURCE_DIR}/json_parser.c
   ${PROJECT_SOURCE_DIR}/rbtree.c
-  ${PROJECT_SOURCE_DIR}/json.cc
+  ${PROJECT_SOURCE_DIR}/Json.cc
 )
 
 if (JSON_OPT_BUILD_TESTS)
