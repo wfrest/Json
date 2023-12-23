@@ -101,6 +101,17 @@ Json::Json(const std::string& str, bool parse_flag) : parent_(nullptr)
     allocated_ = node_ == nullptr ? false : true;
 }
 
+Json::Json(const std::vector<std::string>& val)
+    : node_(json_value_create(JSON_VALUE_ARRAY)),
+      parent_(nullptr), allocated_(true)
+{
+    json_array_t* arr = json_value_array(node_);
+    for (const auto& str : val)
+    {
+        json_array_append(arr, JSON_VALUE_STRING, str.c_str());
+    }
+}
+
 Json::~Json()
 {
     destroy_node(&node_);
@@ -378,6 +389,11 @@ bool Json::can_obj_push_back()
 
 void Json::push_back(const std::string& key, bool val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Object{{key, val}};
+        return;
+    }
     if (!can_obj_push_back())
     {
         return;
@@ -389,6 +405,11 @@ void Json::push_back(const std::string& key, bool val)
 
 void Json::push_back(const std::string& key, std::nullptr_t val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Object{{key, val}};
+        return;
+    }
     if (!can_obj_push_back())
     {
         return;
@@ -404,6 +425,11 @@ void Json::push_back(const std::string& key, const std::string& val)
 
 void Json::push_back(const std::string& key, const char* val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Object{{key, val}};
+        return;
+    }
     if (!can_obj_push_back())
     {
         return;
@@ -414,6 +440,11 @@ void Json::push_back(const std::string& key, const char* val)
 
 void Json::push_back(const std::string& key, const std::vector<std::string>& val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Object{{key, val}};
+        return;
+    }
     if (!can_obj_push_back())
     {
         return;
@@ -430,6 +461,11 @@ void Json::push_back(const std::string& key, const std::vector<std::string>& val
 
 void Json::push_back(const std::string& key, const Json& val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Object{{key, val}};
+        return;
+    }
     if (!can_obj_push_back())
     {
         return;
