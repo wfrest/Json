@@ -602,6 +602,11 @@ Json Json::copy() const
 
 void Json::push_back(bool val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Array{{val}};
+        return;
+    }
     if (!can_arr_push_back())
     {
         return;
@@ -613,6 +618,11 @@ void Json::push_back(bool val)
 
 void Json::push_back(std::nullptr_t val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Array{{val}};
+        return;
+    }
     if (!can_arr_push_back())
     {
         return;
@@ -635,6 +645,11 @@ void Json::push_back(const std::vector<std::string>& val)
 
 void Json::push_back(const char* val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Array{{val}};
+        return;
+    }
     if (!can_arr_push_back())
     {
         return;
@@ -645,6 +660,11 @@ void Json::push_back(const char* val)
 
 void Json::push_back(const Json& val)
 {
+    if (is_placeholder())
+    {
+        *this = Json::Array{{val}};
+        return;
+    }
     if (!can_arr_push_back())
     {
         return;

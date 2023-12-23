@@ -345,6 +345,11 @@ public:
                                                   bool>::type = true>
     void push_back(T val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Array{{val}};
+            return;
+        }
         if (!can_arr_push_back())
         {
             return;
@@ -359,6 +364,11 @@ public:
                                       bool>::type = true>
     void push_back(const T& val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Array{{val}};
+            return;
+        }
         if (!can_arr_push_back())
         {
             return;
