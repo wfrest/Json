@@ -552,15 +552,18 @@ void Json::normal_push_back(const std::string& key,
 {
     json_object_t* obj = json_value_object(parent_);
     const json_value_t* find = json_object_find(key.c_str(), obj);
+    const json_value_t* v;
     if (find == nullptr)
     {
-        json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
-        return;
+        v = json_object_append(obj, key.c_str(), JSON_VALUE_ARRAY);
     }
-    const json_value_t *v = json_object_insert_before(find, obj, key.c_str(),
-                                                      JSON_VALUE_ARRAY);
-    json_value_t* remove_val = json_object_remove(find, obj);
-    json_value_destroy(remove_val);
+    else
+    {
+        v = json_object_insert_before(find, obj, key.c_str(),
+                                      JSON_VALUE_ARRAY);
+        json_value_t* remove_val = json_object_remove(find, obj);
+        json_value_destroy(remove_val);
+    }
     json_array_t* arr = json_value_array(v);
     for (const auto& str : val)
         json_array_append(arr, JSON_VALUE_STRING, str.c_str());
