@@ -75,30 +75,11 @@ Json::Json(std::nullptr_t null)
 {
 }
 
-Json::Json(double val)
-    : node_(json_value_create(JSON_VALUE_NUMBER, val)), parent_(nullptr),
-      allocated_(true)
-{
-}
-
-Json::Json(int val)
-    : node_(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val))),
-      parent_(nullptr), allocated_(true)
-{
-}
-
 Json::Json(bool val)
     : node_(val ? json_value_create(JSON_VALUE_TRUE)
                 : json_value_create(JSON_VALUE_FALSE)),
       parent_(nullptr), allocated_(true)
 {
-}
-
-// for parse
-Json::Json(const std::string& str, bool parse_flag) : parent_(nullptr)
-{
-    node_ = json_value_parse(str.c_str());
-    allocated_ = node_ == nullptr ? false : true;
 }
 
 Json::Json(const std::vector<std::string>& val)
@@ -110,6 +91,13 @@ Json::Json(const std::vector<std::string>& val)
     {
         json_array_append(arr, JSON_VALUE_STRING, str.c_str());
     }
+}
+
+// for parse
+Json::Json(const std::string& str, bool parse_flag) : parent_(nullptr)
+{
+    node_ = json_value_parse(str.c_str());
+    allocated_ = node_ == nullptr ? false : true;
 }
 
 Json::~Json()
