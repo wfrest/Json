@@ -204,6 +204,11 @@ public:
                                                   bool>::type = true>
     void push_back(const std::string& key, const T& val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Object{{key, val}};
+            return;
+        }
         if (!can_obj_push_back())
         {
             return;
@@ -219,6 +224,11 @@ public:
                                       bool>::type = true>
     void push_back(const std::string& key, const T& val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Object{{key, val}};
+            return;
+        }
         if (!can_obj_push_back())
         {
             return;
@@ -345,6 +355,11 @@ public:
                                                   bool>::type = true>
     void push_back(T val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Array{{val}};
+            return;
+        }
         if (!can_arr_push_back())
         {
             return;
@@ -359,6 +374,11 @@ public:
                                       bool>::type = true>
     void push_back(const T& val)
     {
+        if (is_placeholder())
+        {
+            *this = Json::Array{{val}};
+            return;
+        }
         if (!can_arr_push_back())
         {
             return;
@@ -712,6 +732,7 @@ public:
     Json(double val);
     Json(int val);
     Json(bool val);
+    Json(const std::vector<std::string>& val);
 
     // For parse
     Json(const std::string& str, bool parse_flag);
