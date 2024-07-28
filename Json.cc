@@ -3,53 +3,6 @@
 namespace wfrest
 {
 
-namespace
-{
-
-json_value_t* json_value_copy(const json_value_t* val);
-
-json_value_t* json_value_copy_object(const json_value_t* val)
-{
-    json_value_t* dest_val = json_value_create(JSON_VALUE_OBJECT);
-    json_object_t* dest_obj = json_value_object(dest_val);
-    json_object_t* obj = json_value_object(val);
-    const char* name;
-
-    json_object_for_each(name, val, obj)
-        json_object_append(dest_obj, name, 0, json_value_copy(val));
-
-    return dest_val;
-}
-
-json_value_t* json_value_copy_array(const json_value_t* val)
-{
-    json_value_t* dest_val = json_value_create(JSON_VALUE_ARRAY);
-    json_array_t* dest_arr = json_value_array(dest_val);
-    json_array_t* arr = json_value_array(val);
-    json_array_for_each(val, arr)
-        json_array_append(dest_arr, 0, json_value_copy(val));
-    return dest_val;
-}
-
-json_value_t* json_value_copy(const json_value_t* val)
-{
-    switch (json_value_type(val))
-    {
-        case JSON_VALUE_STRING:
-            return json_value_create(JSON_VALUE_STRING, json_value_string(val));
-        case JSON_VALUE_NUMBER:
-            return json_value_create(JSON_VALUE_NUMBER, json_value_number(val));
-        case JSON_VALUE_OBJECT:
-            return json_value_copy_object(val);
-        case JSON_VALUE_ARRAY:
-            return json_value_copy_array(val);
-        default:
-            return json_value_create(json_value_type(val));
-    }
-}
-
-} // namespace
-
 // ------------------------ Constructor -------------------------
 Json::Json()
     : node_(json_value_create(JSON_VALUE_NULL)), parent_(nullptr),
@@ -919,7 +872,14 @@ void Json::string_convert(const char* str, std::string* out_str)
                 out_str->append("\\\\");
                 break;
             default:
-                out_str->push_back(*str);
+                if ((unsigned char)*str < 0x20)
+                {
+                    char buf[8];
+                    snprintf(buf, 8, "\\u00%02x", *str);
+                    out_str->append(buf);
+                }
+                else
+                    out_str->push_back(*str);
                 break;
         }
         str++;
@@ -1007,9 +967,8 @@ void Json::object_convert_not_format(const json_object_t* obj,
             out_str->append(",");
         }
         n++;
-        out_str->append("\"");
-        out_str->append(name);
-        out_str->append("\":");
+        string_convert(name, out_str);
+        out_str->append(":");
         value_convert(val, 0, 0, out_str);
     }
     out_str->append("}");
