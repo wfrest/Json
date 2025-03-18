@@ -1,342 +1,272 @@
-#ifndef _JSON_H_
-#define _JSON_H_
+#ifndef JSON_WRAPPER_HPP
+#define JSON_WRAPPER_HPP
 
+#include <stdexcept>
 #include <string>
-#include <vector>
-#include <map>
-#include <iostream>
-#include <fstream>
+#include <sstream>
 #include <memory>
-#include <type_traits>
-#include <functional>
-#include <utility>
-#include <iterator>
-#include <cassert>
-
 #include "json_parser.h"
-
-namespace wfrest {
-
-// 前向声明
-class Json;
-
-// Global operator<< for ostream
-std::ostream& operator<<(std::ostream& os, const Json& json);
-
 class Json {
+private:
+    using JsonValuePtr = std::shared_ptr<json_value_t>;
+
+    JsonValuePtr value;
+
+    std::string dump_value(const json_value_t* val) const {
+        if (!val) return "null";
+        
+        switch (json_value_type(val)) {
+            case JSON_VALUE_STRING: {
+                const char* str = json_value_string(val);
+                return "\"" + std::string(str ? str : "") + "\"";
+            }
+            case JSON_VALUE_NUMBER: {
+                double num = json_value_number(val);
+                std::ostringstream oss;
+                oss << num;
+                return oss.str();
+            }
+            case JSON_VALUE_TRUE:
+                return "true";
+            case JSON_VALUE_FALSE:
+                return "false";
+            case JSON_VALUE_NULL:
+                return "null";
+            case JSON_VALUE_OBJECT: {
+                std::ostringstream oss;
+                oss << "{";
+                const json_object_t* obj = json_value_object(val);
+                const char* name = nullptr;
+                const json_value_t* v = nullptr;
+                bool first = true;
+                json_object_for_each(name, v, obj) {
+                    if (!first) oss << ",";
+                    oss << "\"" << name << "\":" << dump_value(v);
+                    first = false;
+                }
+                oss << "}";
+                return oss.str();
+            }
+            case JSON_VALUE_ARRAY: {
+                std::ostringstream oss;
+                oss << "[";
+                const json_array_t* arr = json_value_array(val);
+                const json_value_t* v = nullptr;
+                bool first = true;
+                json_array_for_each(v, arr) {
+                    if (!first) oss << ",";
+                    oss << dump_value(v);
+                    first = false;
+                }
+                oss << "]";
+                return oss.str();
+            }
+            default:
+                return "null";
+        }
+    }
+
+    // 代理类，仅用于赋值
+    class Proxy {
+    private:
+        Json& parent;
+        std::string key;  // 对于对象
+        size_t index;     // 对于数组
+        bool is_array;
+
+    public:
+        Proxy(Json& p, const std::string& k) : parent(p), key(k), index(0), is_array(false) {}
+        Proxy(Json& p, size_t i) : parent(p), key(""), index(i), is_array(true) {}
+
+        Proxy& operator=(const Json& other) {
+            if (is_array) {
+                json_array_t* arr = json_value_array(parent.value.get());
+                const json_value_t* val = nullptr;
+                size_t i = 0;
+                const json_value_t* v = nullptr;
+                json_array_for_each(v, arr) {
+                    if (i++ == index) {
+                        val = v;
+                        break;
+                    }
+                }
+                if (val) {
+                    json_array_remove(val, arr);
+                }
+                json_value_t* copy = json_value_copy(other.value.get());
+                json_array_append(arr, json_value_type(copy), json_value_number(copy));
+                json_value_destroy(copy);
+            } else {
+                json_object_t* obj = json_value_object(parent.value.get());
+                const json_value_t* old_val = json_object_find(key.c_str(), obj);
+                if (old_val) {
+                    json_object_remove(old_val, obj);
+                }
+                json_value_t* copy = json_value_copy(other.value.get());
+                json_object_append(obj, key.c_str(), json_value_type(copy), json_value_number(copy));
+                json_value_destroy(copy);
+            }
+            return *this;
+        }
+
+        Proxy& operator=(int val) { return *this = Json(val); }
+        Proxy& operator=(double val) { return *this = Json(val); }
+        Proxy& operator=(bool val) { return *this = Json(val); }
+        Proxy& operator=(const std::string& val) { return *this = Json(val.c_str()); }
+        Proxy& operator=(const char* val) { return *this = Json(val); }
+        Proxy& operator=(std::nullptr_t) { return *this = Json(nullptr); }
+    };
+
+    // 读取时返回 Json 对象
+    Json get_element(const std::string& key) const {
+        if (!is_object()) {
+            throw std::runtime_error("Not an object");
+        }
+        json_object_t* obj = json_value_object(value.get());
+        const json_value_t* val = json_object_find(key.c_str(), obj);
+        if (!val) {
+            val = json_object_append(obj, key.c_str(), JSON_VALUE_NULL);
+        }
+        Json result;
+        result.value = value;  // 共享所有权
+        return result;
+    }
+
+    Json get_element(size_t index) const {
+        if (!is_array()) {
+            throw std::runtime_error("Not an array");
+        }
+        json_array_t* arr = json_value_array(value.get());
+        const json_value_t* val = nullptr;
+        size_t i = 0;
+        const json_value_t* v = nullptr;
+        json_array_for_each(v, arr) {
+            if (i++ == index) {
+                val = v;
+                break;
+            }
+        }
+        if (!val) throw std::out_of_range("Array index out of range");
+        Json result;
+        result.value = value;  // 共享所有权
+        return result;
+    }
+
 public:
-    class Object;
-    class Array;
-    class Iterator;
-    class ReverseIterator;
+    Json() : value(json_value_create(JSON_VALUE_OBJECT), json_value_destroy) {}
 
-    // Constructors
-    Json();  // Default constructor creates a null value
-    Json(std::nullptr_t);
-    Json(int value);
-    Json(double value);
-    Json(bool value);
-    Json(const char* value);
-    Json(const std::string& value);
-    Json(const Object& obj);
-    Json(const Array& arr);
-    
-    // Copy and move operations
-    Json(const Json& other);
-    Json(Json&& other) noexcept;
-    Json& operator=(const Json& other);
-    Json& operator=(Json&& other) noexcept;
-    
-    // 基本类型赋值操作符
-    Json& operator=(int value);
-    Json& operator=(double value);
-    Json& operator=(bool value);
-    Json& operator=(const char* value);
-    Json& operator=(const std::string& value);
-    Json& operator=(std::nullptr_t);
-    Json& operator=(const Object& obj);
-    Json& operator=(const Array& arr);
+    explicit Json(const std::string& json_str) 
+        : value(json_value_parse(json_str.c_str()), json_value_destroy) {
+        if (!value) throw std::runtime_error("Failed to parse JSON string");
+    }
 
-    // Static factory methods
-    static Json parse(const std::string& json_str);
-    static Json parse(std::ifstream& file);
-    static Json parse(FILE* fp);
-    static Object object();
-    static Array array();
+    Json(int val) : value(json_value_create(JSON_VALUE_NUMBER, static_cast<double>(val)), json_value_destroy) {}
+    Json(double val) : value(json_value_create(JSON_VALUE_NUMBER, val), json_value_destroy) {}
+    Json(bool val) : value(json_value_create(val ? JSON_VALUE_TRUE : JSON_VALUE_FALSE), json_value_destroy) {}
+    Json(const char* val) : value(json_value_create(JSON_VALUE_STRING, val), json_value_destroy) {}
+    Json(std::nullptr_t) : value(json_value_create(JSON_VALUE_NULL), json_value_destroy) {}
 
-    // Type checking
-    int type() const;
-    bool is_null() const;
-    bool is_boolean() const;
-    bool is_number() const;
-    bool is_string() const;
-    bool is_object() const;
-    bool is_array() const;
-    bool is_valid() const;
+    Json(const Json& other) : value(other.value) {}
+    Json(Json&& other) noexcept : value(std::move(other.value)) {}
 
-    // Value getters with type checking
+    Json& operator=(const Json& other) {
+        if (this != &other) {
+            value = other.value;
+        }
+        return *this;
+    }
+
+    bool is_object() const { return json_value_type(value.get()) == JSON_VALUE_OBJECT; }
+    bool is_array() const { return json_value_type(value.get()) == JSON_VALUE_ARRAY; }
+    bool is_string() const { return json_value_type(value.get()) == JSON_VALUE_STRING; }
+    bool is_number() const { return json_value_type(value.get()) == JSON_VALUE_NUMBER; }
+    bool is_boolean() const { return json_value_type(value.get()) == JSON_VALUE_TRUE || 
+                                   json_value_type(value.get()) == JSON_VALUE_FALSE; }
+    bool is_null() const { return json_value_type(value.get()) == JSON_VALUE_NULL; }
+
+    // 区分赋值和读取
+    Proxy operator[](const std::string& key) { return Proxy(*this, key); }
+    Proxy operator[](size_t index) { return Proxy(*this, index); }
+
+    // 提供读取接口
+    Json at(const std::string& key) const { return get_element(key); }
+    Json at(size_t index) const { return get_element(index); }
+
     template<typename T>
     T get() const;
 
-    // Implicit conversion operators
-    operator int() const;
-    operator double() const;
-    operator bool() const;
-    operator std::string() const;
-    operator std::nullptr_t() const;
-    
-    // Get Object/Array - since direct operator conversion causes issues
-    Object to_object() const;
-    Array to_array() const;
+    void push_back(const Json& item) {
+        if (!is_array()) {
+            value.reset(json_value_create(JSON_VALUE_ARRAY), json_value_destroy);
+        }
+        json_array_t* arr = json_value_array(value.get());
+        json_value_t* copy = json_value_copy(item.value.get());
+        switch (json_value_type(copy)) {
+            case JSON_VALUE_STRING:
+                json_array_append(arr, JSON_VALUE_STRING, json_value_string(copy));
+                break;
+            case JSON_VALUE_NUMBER:
+                json_array_append(arr, JSON_VALUE_NUMBER, json_value_number(copy));
+                break;
+            case JSON_VALUE_TRUE:
+            case JSON_VALUE_FALSE:
+                json_array_append(arr, json_value_type(copy));
+                break;
+            case JSON_VALUE_NULL:
+                json_array_append(arr, JSON_VALUE_NULL);
+                break;
+            default:
+                json_array_append(arr, json_value_type(copy), copy);
+                break;
+        }
+        if (copy) json_value_destroy(copy);
+    }
 
-    // Object operations
-    Json& operator[](const std::string& key);
-    const Json& operator[](const std::string& key) const;
-    Json& operator[](const char* key);
-    const Json& operator[](const char* key) const;
-    void push_back(const std::string& key, const Json& value);
-    void push_back(const char* key, const Json& value);
-    void erase(const std::string& key);
-    void erase(const char* key);
-    bool has(const std::string& key) const;
-    bool has(const char* key) const;
-    bool empty() const;
-    size_t size() const;
-    void clear();
-    
-    // Array operations
-    Json& operator[](size_t index);
-    const Json& operator[](size_t index) const;
-    void push_back(const Json& value);
-    void erase(size_t index);
-
-    // Serialization
-    std::string dump(int indent = -1) const;
-
-    // Copy operation
-    Json copy() const;
-
-    // Iterator support
-    using iterator = Iterator;
-    using reverse_iterator = ReverseIterator;
-    
-    iterator begin();
-    iterator end();
-    reverse_iterator rbegin();
-    reverse_iterator rend();
-
-    // Destructor
-    ~Json();
-
-private:
-    json_value_t* value_;
-    bool valid_;
-    bool owns_value_; // New flag to indicate ownership of the value_
-
-    // Reference tracking for memory management
-    static std::vector<Json*>& reference_registry();
-    static void register_reference(Json* ref);
-    static void cleanup_references();
-    static void cleanup_all_references();
-
-    // Constructors that take ownership of a json_value_t
-    explicit Json(json_value_t* value, bool take_ownership = true);
-    
-    // Helper method to create a reference to a child node
-    Json& create_reference(json_value_t* child_value);
-    
-    // Static null value for error cases
-    static Json& null_value();
-
-    friend std::ostream& operator<<(std::ostream& os, const Json& json);
-    friend class Object;
-    friend class Array;
-    friend class Iterator;
-    friend class ReverseIterator;
-};
-
-// Wrapper class for JSON objects
-class Json::Object {
-public:
-    Object();
-    
-    // Element access
-    Json& operator[](const std::string& key);
-    Json& operator[](const char* key);
-    
-    // Modifiers
-    void push_back(const std::string& key, const Json& value);
-    void push_back(const char* key, const Json& value);
-    void erase(const std::string& key);
-    void erase(const char* key);
-    bool has(const std::string& key) const;
-    bool has(const char* key) const;
-    void clear();
-    
-    // Capacity
-    bool empty() const;
-    size_t size() const;
-    
-    // String conversion
-    std::string dump(int indent = -1) const;
-    
-    // Internal conversions
-    operator Json() const;
-    json_object_t* native_object() const;
-    
-private:
-    Json json_;
-    
-    friend class Json;
-};
-
-// Wrapper class for JSON arrays
-class Json::Array {
-public:
-    Array();
-    
-    // Element access
-    Json& operator[](size_t index);
-    
-    // Modifiers
-    void push_back(const Json& value);
-    void erase(size_t index);
-    void clear();
-    
-    // Capacity
-    bool empty() const;
-    size_t size() const;
-    
-    // String conversion
-    std::string dump(int indent = -1) const;
-    
-    // Internal conversions
-    operator Json() const;
-    json_array_t* native_array() const;
-    
-private:
-    Json json_;
-    
-    friend class Json;
-};
-
-// Iterator implementation for both objects and arrays
-class Json::Iterator {
-public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = Json;
-    using difference_type = std::ptrdiff_t;
-    using pointer = Json*;
-    using reference = Json&;
-
-    Iterator(const Json* json, const json_value_t* value = nullptr, const char* name = nullptr);
-    
-    // Copy and move operations
-    Iterator(const Iterator& other);
-    Iterator(Iterator&& other) noexcept;
-    Iterator& operator=(const Iterator& other);
-    Iterator& operator=(Iterator&& other) noexcept;
-    
-    // Iterator operations
-    Iterator& operator++();
-    Iterator operator++(int);
-    bool operator==(const Iterator& other) const;
-    bool operator!=(const Iterator& other) const;
-    
-    // Dereference operations
-    const Json& operator*() const;
-    const Json* operator->() const;
-    
-    // Special accessor for objects
-    std::string key() const;
-    const Json& value() const;
-
-private:
-    const Json* json_;
-    const json_value_t* current_value_;
-    const char* current_name_;
-};
-
-// ReverseIterator implementation for both objects and arrays
-class Json::ReverseIterator {
-public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = Json;
-    using difference_type = std::ptrdiff_t;
-    using pointer = Json*;
-    using reference = Json&;
-
-    ReverseIterator(const Json* json, const json_value_t* value = nullptr, const char* name = nullptr);
-    
-    // Copy and move operations
-    ReverseIterator(const ReverseIterator& other);
-    ReverseIterator(ReverseIterator&& other) noexcept;
-    ReverseIterator& operator=(const ReverseIterator& other);
-    ReverseIterator& operator=(ReverseIterator&& other) noexcept;
-    
-    // Iterator operations
-    ReverseIterator& operator++();
-    ReverseIterator operator++(int);
-    bool operator==(const ReverseIterator& other) const;
-    bool operator!=(const ReverseIterator& other) const;
-    
-    // Dereference operations
-    const Json& operator*() const;
-    const Json* operator->() const;
-    
-    // Special accessor for objects
-    std::string key() const;
-    const Json& value() const;
-
-private:
-    const Json* json_;
-    const json_value_t* current_value_;
-    const char* current_name_;
-};
-
-// Template specializations for get<T>
-template<>
-inline int Json::get<int>() const {
-    if (type() != JSON_VALUE_NUMBER) {
+    size_t size() const {
+        if (is_array()) return json_array_size(json_value_array(value.get()));
+        if (is_object()) return json_object_size(json_value_object(value.get()));
         return 0;
     }
-    return static_cast<int>(json_value_number(value_));
+
+    bool has(const std::string& key) const {
+        if (!is_object()) return false;
+        return json_object_find(key.c_str(), json_value_object(value.get())) != nullptr;
+    }
+
+    std::string dump() const {
+        return dump_value(value.get());
+    }
+
+    static Json parse(const std::string& str) {
+        return Json(str);
+    }
+
+private:
+    Json(JsonValuePtr ptr) : value(ptr) {}
+};
+
+template<>
+inline int Json::get<int>() const {
+    if (!is_number()) throw std::runtime_error("JSON value is not a number");
+    return static_cast<int>(json_value_number(value.get()));
 }
 
 template<>
 inline double Json::get<double>() const {
-    if (type() != JSON_VALUE_NUMBER) {
-        return 0.0;
-    }
-    return json_value_number(value_);
+    if (!is_number()) throw std::runtime_error("JSON value is not a number");
+    return json_value_number(value.get());
 }
 
 template<>
 inline bool Json::get<bool>() const {
-    if (type() == JSON_VALUE_TRUE) {
-        return true;
-    } else if (type() == JSON_VALUE_FALSE) {
-        return false;
-    }
-    return false;
+    if (!is_boolean()) throw std::runtime_error("JSON value is not a boolean");
+    return json_value_type(value.get()) == JSON_VALUE_TRUE;
 }
 
 template<>
 inline std::string Json::get<std::string>() const {
-    if (type() != JSON_VALUE_STRING) {
-        return "";
-    }
-    const char* str = json_value_string(value_);
-    return str ? str : "";
+    if (!is_string()) throw std::runtime_error("JSON value is not a string");
+    return std::string(json_value_string(value.get()));
 }
 
-template<>
-inline std::nullptr_t Json::get<std::nullptr_t>() const {
-    return nullptr;
-}
-
-// 将get<Object>和get<Array>的特化移到.cc文件中实现
-
-} // namespace wfrest
-
-#endif // _JSON_H_
+#endif
