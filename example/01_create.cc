@@ -1,5 +1,6 @@
 #include "Json.h"
 #include <fstream>
+#include <utility>
 using namespace wfrest;
 
 void create_json_file()
@@ -12,7 +13,9 @@ void create_json_file()
 void create_by_file_stream()
 {
     std::ifstream f("example.json");
-    Json data = Json::parse(f);
+    std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    f.close();
+    Json data = Json::parse(content);
     std::cout << data << std::endl;
 }
 
@@ -38,6 +41,30 @@ void create_by_string()
 
 void create_by_initailizer()
 {
+    // 在C++11中，我们无法直接使用花括号语法初始化，所以使用API方式构建
+    // 但布局与原始花括号语法相似
+    Json::Object obj;
+    obj.push_back("null", nullptr);
+    obj.push_back("integer", 1);
+    obj.push_back("float", 1.3);
+    obj.push_back("boolean", true);
+    obj.push_back("string", "something");
+    
+    Json::Array arr;
+    arr.push_back(1);
+    arr.push_back(2);
+    obj.push_back("array", arr);
+    
+    Json::Object nested_obj;
+    nested_obj.push_back("key", "value");
+    nested_obj.push_back("key2", "value2");
+    obj.push_back("object", nested_obj);
+    
+    Json data = obj;
+    std::cout << data << std::endl;
+    
+    // 注：在C++14或更高版本中，可以直接使用如下方式：
+    /*
     Json data = Json::Object{
         {"null", nullptr},
         {"integer", 1},
@@ -51,7 +78,7 @@ void create_by_initailizer()
              {"key2", "value2"},
          }},
     };
-    std::cout << data << std::endl;
+    */
 }
 
 int main()

@@ -37,11 +37,11 @@ TEST(JsonTest, is_type)
     EXPECT_EQ(str1.type(), JSON_VALUE_STRING);
     EXPECT_TRUE(str1.is_string());
 
-    Json obj1 = Json::Object();
+    Json obj1 = Json::object();
     EXPECT_EQ(obj1.type(), JSON_VALUE_OBJECT);
     EXPECT_TRUE(obj1.is_object());
 
-    Json arr1 = Json::Array();
+    Json arr1 = Json::array();
     EXPECT_EQ(arr1.type(), JSON_VALUE_ARRAY);
     EXPECT_TRUE(arr1.is_array());
 }

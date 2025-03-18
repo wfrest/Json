@@ -30,6 +30,7 @@ add_library(
 )
 
 if (JSON_OPT_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(test)
 endif()
 

@@ -11,16 +11,17 @@ void obj_iter()
     data["key3"] = true;
     for (Json::iterator it = data.begin(); it != data.end(); it++)
     {
-        std::cout << it->key() << " : " << it->value() << std::endl;
+        std::cout << it.key() << " : " << it.value() << std::endl;
     }
     for (auto it = data.begin(); it != data.end(); it++)
     {
-        // equal to it->value()
+        // equal to it.value()
         std::cout << *it << std::endl;
     }
     for (const auto& it : data)
     {
-        std::cout << it.key() << " : " << it.value() << std::endl;
+        // it is a Json object, not an iterator
+        std::cout << it << std::endl;
     }
 }
 
@@ -32,11 +33,11 @@ void obj_iter_reverse()
     data["key3"] = true;
     for (Json::reverse_iterator it = data.rbegin(); it != data.rend(); it++)
     {
-        std::cout << it->key() << " : " << it->value() << std::endl;
+        std::cout << it.key() << " : " << it.value() << std::endl;
     }
     for (auto it = data.rbegin(); it != data.rend(); it++)
     {
-        // equal to it->value()
+        // equal to it.value()
         std::cout << *it << std::endl;
     }
 }
@@ -49,7 +50,7 @@ void arr_iter()
     data.push_back(false);
     for (Json::iterator it = data.begin(); it != data.end(); it++)
     {
-        std::cout << it->value() << std::endl;
+        std::cout << it.value() << std::endl;
     }
     for (auto it = data.begin(); it != data.end(); ++it)
     {
@@ -69,7 +70,7 @@ void arr_iter_reverse()
     data.push_back(false);
     for (Json::reverse_iterator it = data.rbegin(); it != data.rend(); it++)
     {
-        std::cout << it->value() << std::endl;
+        std::cout << it.value() << std::endl;
     }
     for (auto it = data.rbegin(); it != data.rend(); ++it)
     {

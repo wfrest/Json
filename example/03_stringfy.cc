@@ -1,5 +1,6 @@
 #include "Json.h"
 #include <iomanip>
+#include <sstream>
 
 using namespace wfrest;
 

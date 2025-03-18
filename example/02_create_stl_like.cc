@@ -1,29 +1,43 @@
 #include "Json.h"
 #include <fstream>
+#include <iostream>
 using namespace wfrest;
 
 void create_by_operator()
 {
+    std::cout << "1. Creating empty structure..." << std::endl;
     // create an empty structure (null)
     Json data;
+    std::cout << "2. Printing empty structure..." << std::endl;
     std::cout << "empty structure is " << data << std::endl;
 
+    std::cout << "3. Adding pi value..." << std::endl;
     // add a number that is stored as double (note the implicit conversion of j
     // to an object)
     data["pi"] = 3.141;
 
+    std::cout << "4. Adding happy value..." << std::endl;
     // add a Boolean that is stored as bool
     data["happy"] = true;
 
+    std::cout << "5. Adding name value..." << std::endl;
     // add a string that is stored as std::string
     data["name"] = "chanchan";
 
+    std::cout << "6. Adding nothing value..." << std::endl;
     // add another null object by passing nullptr
     data["nothing"] = nullptr;
 
-    // add an object inside the object
-    data["answer"]["everything"] = 42;
+    std::cout << "7. Adding nested answer.everything value..." << std::endl;
+    // add an object inside the object - using a different approach
+    Json answer;
+    answer["everything"] = 42;
+    data["answer"] = answer;
+    
+    std::cout << "8. Printing final structure..." << std::endl;
     std::cout << data << std::endl;
+    
+    std::cout << "9. Function completed successfully!" << std::endl;
 }
 
 void create_by_push_back_object()

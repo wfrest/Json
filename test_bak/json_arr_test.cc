@@ -11,7 +11,7 @@ TEST(ArrTest, create_arr)
 
 TEST(ArrTest, empty_arr)
 {
-    Json data = Json::Array();
+    Json data = Json::array();
     EXPECT_TRUE(data.is_array());
     EXPECT_EQ(data.dump(), "[]");
 }
@@ -73,7 +73,7 @@ TEST(ArrTest, arr_search)
 
     // std::cout << data[6] << std::endl;
     // std::cout << data[6].get<Json::Object>().dump() << std::endl;
-    EXPECT_EQ(data[6].get<Json::Object>().dump(), R"({"123":12})");
+    EXPECT_EQ(data[6].to_object().dump(), R"({"123":12})");
 
     // Array
     Json::Array arr;
@@ -84,7 +84,7 @@ TEST(ArrTest, arr_search)
 
     // std::cout << data[7] << std::endl;
     // std::cout << data[7].get<Json::Array>().dump() << std::endl;
-    EXPECT_EQ(data[7].get<Json::Array>().dump(), R"([1,null])");
+    EXPECT_EQ(data[7].to_array().dump(), R"([1,null])");
 
     // implicit conversion
     int a = data[0];
@@ -100,10 +100,10 @@ TEST(ArrTest, arr_search)
     bool f = data[5];
     EXPECT_EQ(f, false);
 
-    Json::Object g = data[6];
+    Json::Object g = data[6].to_object();
     EXPECT_EQ(g.dump(), R"({"123":12})");
 
-    Json::Array h = data[7];
+    Json::Array h = data[7].to_array();
     EXPECT_EQ(h.dump(), R"([1,null])");
 }
 
